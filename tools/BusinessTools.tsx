@@ -20,9 +20,7 @@ interface ChallanItem {
   id: string;
   code: string;
   desc: string;
-  unit: string;
   qty: number;
-  remarks: string;
 }
 
 // --- Preview Scaler Component ---
@@ -201,8 +199,6 @@ export const InvoiceGenerator: React.FC = () => {
         const r = field === 'rate' ? Number(val) : i.rate;
         newItem.amount = q * r;
       }
-      
-      // If user manually changes amount, we respect it (it is already set via [field]: val)
       
       return newItem;
     }));
@@ -627,31 +623,39 @@ export const InvoiceGenerator: React.FC = () => {
 // ==========================================
 export const DeliveryChallanGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  
+  // Header with fields matching the screenshot
   const [header, setHeader] = useState({
-    title: 'DELIVERY CHALLAN',
-    number: 'DC-001',
-    date: new Date().toISOString().split('T')[0],
-    poNumber: '',
-    vehicleNumber: '',
-    reference: ''
+    title: 'Delivery Challan',
+    invoiceNo: '121051',
+    ntn: '3379147-3',
+    forLabel: 'Office Material',
+    poNumber: 'QICT.PO.25.18097',
+    date: new Date().toISOString().split('T')[0] // Useful to keep, even if screenshot doesn't show it in top right header block.
   });
 
+  // Sender details updated to include Person, Address2
   const [sender, setSender] = useState({
-    company: 'Your Company',
-    address1: 'Street Address',
-    address2: 'City, State, Zip',
-    phone: 'Phone Number'
+    company: 'H & H Emporium',
+    person: 'Tayyab Memon',
+    address1: 'Al Khayam Arcade Nursery',
+    address2: 'Karachi, Pakistan',
+    phone: '03452430044'
   });
 
+  // Recipient details updated to include Header (DP World), Address2
   const [recipient, setRecipient] = useState({
-    company: 'Client Company',
-    address1: 'Street Address',
-    address2: 'City, State, Zip',
-    contact: 'Contact Person'
+    header: 'DP World',
+    company: 'Qasim International Container Terminal Pakistan Ltd',
+    address1: 'Berth 5 - 10 Marginal Wharves, port Muhammad Bin Qasim',
+    address2: 'P.O Box 6425 Karachi- 75020 Pakistan',
+    contact: 'UAN + 92 (21) 111786888, tell: +92 (21) 34739100'
   });
 
+  // Items: S.No, Item Code, Description, Qty (Matching screenshot)
   const [items, setItems] = useState<ChallanItem[]>([
-    { id: '1', code: 'ITM01', desc: 'Item 1', unit: 'pcs', qty: 10, remarks: '' }
+    { id: '1', code: 'MATERIAL', desc: 'Window Blinds (as per attached picture) approx. size 12\'+4\'\'x5\' with complete installation.', qty: 1 },
+    { id: '2', code: 'MATERIAL', desc: 'Window Blinds (as per attached picture) approx. size 2\'+6\'\'x5\' with complete installation.', qty: 2 }
   ]);
   
   const [stampImage, setStampImage] = useState<string | null>(null);
@@ -664,15 +668,10 @@ export const DeliveryChallanGenerator: React.FC = () => {
     }
   };
 
-  const addItem = () => setItems([...items, { id: Date.now().toString(), code: '', desc: '', unit: '', qty: 1, remarks: '' }]);
+  const addItem = () => setItems([...items, { id: Date.now().toString(), code: '', desc: '', qty: 1 }]);
   const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
   const updateItem = (id: string, field: keyof ChallanItem, val: string | number) => setItems(items.map(i => i.id === id ? { ...i, [field]: val } : i));
-  const generateNextNumber = () => {
-    const match = header.number.match(/^(.*?)(\d+)$/);
-    if(match) setHeader({ ...header, number: `${match[1]}${(parseInt(match[2]) + 1).toString().padStart(match[2].length, '0')}` });
-    else setHeader({ ...header, number: `${header.number}-1` });
-  };
-
+  
   const downloadPdf = () => { alert("PDF Download Logic Placeholder"); };
   const downloadDocx = () => { alert("DOCX Download Logic Placeholder"); };
 
@@ -680,46 +679,52 @@ export const DeliveryChallanGenerator: React.FC = () => {
     <div>
       <MobileTabSwitcher active={activeTab} onChange={setActiveTab} />
 
-      <div className="grid xl:grid-cols-5 gap-8">
+      <div className="grid xl:grid-cols-5 gap-8 items-start">
         
-        {/* Editor */}
+        {/* --- Editor Panel --- */}
         <div className={`xl:col-span-2 space-y-6 ${activeTab === 'edit' ? 'block' : 'hidden xl:block'}`}>
            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border dark:border-slate-800 shadow-sm flex flex-wrap gap-2 sticky top-[90px] xl:top-0 z-20">
                <Button onClick={downloadPdf} className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0 text-xs"><Download className="w-4 h-4 mr-1" /> PDF</Button>
                <Button onClick={downloadDocx} className="flex-1 bg-blue-700 hover:bg-blue-800 text-white border-0 text-xs"><FileText className="w-4 h-4 mr-1" /> DOCX</Button>
            </div>
            
+           {/* Header Info */}
            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
-               <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">
-                 <h3 className="font-bold text-gray-800 dark:text-slate-100">Challan Details</h3>
-                 <Button size="sm" variant="outline" onClick={generateNextNumber} className="text-xs px-3 py-1 h-8"><Hash className="w-3 h-3 mr-1" /> Next</Button>
-               </div>
+               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Challan Info</h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Challan #</label><input className={inputClasses} value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Date</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Vehicle #</label><input className={inputClasses} value={header.vehicleNumber} onChange={e=>setHeader({...header, vehicleNumber: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Ref / PO #</label><input className={inputClasses} value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Invoice #</label><input className={inputClasses} value={header.invoiceNo} onChange={e=>setHeader({...header, invoiceNo: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">NTN</label><input className={inputClasses} value={header.ntn} onChange={e=>setHeader({...header, ntn: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">FOR (Project)</label><input className={inputClasses} value={header.forLabel} onChange={e=>setHeader({...header, forLabel: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">P.O. #</label><input className={inputClasses} value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
+                 <div className="md:col-span-2"><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Date (Metadata)</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
                </div>
            </div>
 
+           {/* Sender */}
            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Sender</h3>
               <div className="space-y-3">
-                 <input className={inputClasses} value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} placeholder="Company"/>
-                 <input className={inputClasses} value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} placeholder="Address"/>
+                 <input className={inputClasses + " font-bold"} value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} placeholder="Company Name"/>
+                 <input className={inputClasses} value={sender.person} onChange={e=>setSender({...sender, person: e.target.value})} placeholder="Person Name"/>
+                 <input className={inputClasses} value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} placeholder="Address Line 1"/>
+                 <input className={inputClasses} value={sender.address2} onChange={e=>setSender({...sender, address2: e.target.value})} placeholder="Address Line 2"/>
                  <input className={inputClasses} value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} placeholder="Phone"/>
               </div>
            </div>
 
+           {/* Recipient */}
            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Recipient</h3>
               <div className="space-y-3">
-                 <input className={inputClasses} value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} placeholder="Company"/>
-                 <input className={inputClasses} value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} placeholder="Address"/>
-                 <input className={inputClasses} value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} placeholder="Contact"/>
+                 <input className={inputClasses} value={recipient.header} onChange={e=>setRecipient({...recipient, header: e.target.value})} placeholder="Header (e.g. DP World)"/>
+                 <input className={inputClasses + " font-bold"} value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} placeholder="Company Name"/>
+                 <input className={inputClasses} value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} placeholder="Address Line 1"/>
+                 <input className={inputClasses} value={recipient.address2} onChange={e=>setRecipient({...recipient, address2: e.target.value})} placeholder="Address Line 2"/>
+                 <input className={inputClasses} value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} placeholder="Contact Info"/>
               </div>
            </div>
 
+           {/* Items */}
            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
                <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Items</h3>
                <div className="space-y-4">
@@ -735,20 +740,18 @@ export const DeliveryChallanGenerator: React.FC = () => {
                              <input className={inputClasses + " p-2 text-sm"} placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
                           </div>
                           <div className="col-span-1 md:col-span-4">
-                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Unit</label>
-                             <input className={inputClasses + " p-2 text-sm"} placeholder="Unit" value={item.unit} onChange={e=>updateItem(item.id, 'unit', e.target.value)} />
-                          </div>
-                          <div className="col-span-1 md:col-span-4">
                              <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Qty</label>
                              <input className={inputClasses + " p-2 text-sm"} type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
                           </div>
                           <div className="col-span-1 md:col-span-12">
                              <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Description</label>
-                             <TextArea rows={2} className="min-h-[60px]" placeholder="Description" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
-                          </div>
-                          <div className="col-span-1 md:col-span-12">
-                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Remarks</label>
-                             <input className={inputClasses + " p-2 text-sm"} placeholder="Remarks" value={item.remarks} onChange={e=>updateItem(item.id, 'remarks', e.target.value)} />
+                             <TextArea 
+                               rows={3} 
+                               className="min-h-[80px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white" 
+                               placeholder="Description" 
+                               value={item.desc} 
+                               onChange={e=>updateItem(item.id, 'desc', e.target.value)} 
+                             />
                           </div>
                        </div>
                     </div>
@@ -757,6 +760,7 @@ export const DeliveryChallanGenerator: React.FC = () => {
                </div>
            </div>
 
+           {/* Stamp */}
            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
                <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
                   <Upload className="w-8 h-8 mb-2"/> 
@@ -772,72 +776,76 @@ export const DeliveryChallanGenerator: React.FC = () => {
            </div>
         </div>
 
-        {/* Preview */}
+        {/* --- Preview Panel (MATCHING SCREENSHOT) --- */}
         <div className={`xl:col-span-3 ${activeTab === 'preview' ? 'block' : 'hidden xl:block'}`}>
            <PreviewScaler>
-             <div className="w-[210mm] min-h-[297mm] p-[10mm] relative text-gray-900 bg-white">
-                 <div className="text-right mb-8">
-                    <h1 className="text-3xl font-bold text-blue-600 uppercase mb-2">{header.title}</h1>
-                    <div className="text-sm font-bold">#{header.number}</div>
-                    <div className="text-sm text-gray-500">{header.date}</div>
+             <div className="w-[210mm] min-h-[297mm] p-[10mm] relative text-gray-900 bg-white font-sans">
+                 
+                 {/* Header Right Block */}
+                 <div className="absolute top-[10mm] right-[10mm] text-right">
+                    <h1 className="text-3xl font-bold text-blue-600 mb-1">Delivery Challan</h1>
+                    <div className="text-sm font-bold text-gray-900 mb-1">INVOICE #{header.invoiceNo}</div>
+                    <div className="text-sm font-bold text-gray-900 mb-2">NTN {header.ntn}</div>
+                    
+                    <div className="flex justify-end items-center gap-1 mb-1">
+                       <span className="font-bold text-blue-600 text-sm">FOR</span>
+                       <span className="text-gray-800 text-sm">{header.forLabel}</span>
+                    </div>
+                    <div className="font-bold text-blue-600 text-sm">P.O.#{header.poNumber}</div>
                  </div>
                  
-                 <div className="grid grid-cols-2 gap-8 mb-8">
-                    <div>
-                       <h3 className="font-bold text-gray-500 text-xs uppercase mb-1">From</h3>
-                       <div className="font-bold text-lg">{sender.company}</div>
-                       <div className="text-sm text-gray-600">{sender.address1}</div>
-                       <div className="text-sm text-gray-600">{sender.phone}</div>
-                    </div>
-                    <div>
-                       <h3 className="font-bold text-gray-500 text-xs uppercase mb-1">To</h3>
-                       <div className="font-bold text-lg">{recipient.company}</div>
-                       <div className="text-sm text-gray-600">{recipient.address1}</div>
-                       <div className="text-sm text-gray-600">{recipient.contact}</div>
+                 {/* Sender (Left) */}
+                 <div className="mt-12 mb-8 max-w-[60%]">
+                    <h2 className="text-lg font-bold text-gray-700 mb-1">{sender.company}</h2>
+                    <div className="text-sm text-gray-800 space-y-0.5 leading-snug">
+                       <p>{sender.person}</p>
+                       <p>{sender.address1}</p>
+                       <p>{sender.address2}</p>
+                       <p>Phone {sender.phone}</p>
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-2 gap-4 mb-8 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                    <div><span className="font-bold text-xs text-gray-500 block uppercase">Vehicle No</span>{header.vehicleNumber || '-'}</div>
-                    <div><span className="font-bold text-xs text-gray-500 block uppercase">Reference / PO</span>{header.poNumber || '-'}</div>
+                 {/* Recipient (Left, below sender) */}
+                 <div className="mb-10 max-w-[60%]">
+                    {recipient.header && <p className="text-sm text-gray-800 mb-1">{recipient.header}</p>}
+                    <h3 className="text-sm font-bold underline decoration-2 decoration-gray-800 mb-2">{recipient.company}</h3>
+                    <div className="text-sm text-gray-800 space-y-0.5 leading-snug">
+                       <p>{recipient.address1}</p>
+                       <p>{recipient.address2}</p>
+                       <p>{recipient.contact}</p>
+                    </div>
                  </div>
 
+                 {/* Items Table (Matching columns: S.No, Item Code, Description, Qty) */}
                  <table className="w-full text-sm mb-12">
                     <thead>
-                       <tr className="border-b-2 border-blue-100 text-left">
-                          <th className="py-2 w-10 font-bold text-blue-600">S.No</th>
-                          <th className="py-2 w-24 font-bold text-blue-600">Code</th>
+                       <tr className="border-t border-b border-blue-200 text-left">
+                          <th className="py-2 w-12 text-center font-bold text-blue-600">S. No</th>
+                          <th className="py-2 w-32 font-bold text-blue-600">Item Code</th>
                           <th className="py-2 font-bold text-blue-600">Description</th>
-                          <th className="py-2 w-16 font-bold text-blue-600">Unit</th>
                           <th className="py-2 w-16 text-center font-bold text-blue-600">Qty</th>
-                          <th className="py-2 w-32 font-bold text-blue-600">Remarks</th>
                        </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="divide-y divide-gray-100">
                        {items.map((item, i) => (
-                          <tr key={item.id}>
-                             <td className="py-3 text-gray-500">{i+1}</td>
-                             <td className="py-3 font-bold text-gray-700">{item.code}</td>
-                             <td className="py-3 text-gray-700">{item.desc}</td>
-                             <td className="py-3 text-gray-600">{item.unit}</td>
-                             <td className="py-3 text-center font-bold text-gray-800">{item.qty}</td>
-                             <td className="py-3 text-gray-500 italic">{item.remarks}</td>
+                          <tr key={item.id} className="align-top">
+                             <td className="py-4 text-center text-gray-900">{i+1}</td>
+                             <td className="py-4 font-bold text-gray-900">{item.code}</td>
+                             <td className="py-4 text-gray-900 font-bold whitespace-pre-wrap leading-snug">{item.desc}</td>
+                             <td className="py-4 text-center font-bold text-gray-900">{item.qty}</td>
                           </tr>
                        ))}
                     </tbody>
                  </table>
+                 
+                 <div className="border-t border-blue-200 w-full mb-8"></div>
 
-                 <div className="flex justify-between mt-auto pt-12 border-t border-gray-200">
-                     <div className="text-center">
-                        <div className="h-16 mb-2"></div>
-                        <div className="border-t border-gray-400 w-40 pt-2 text-sm font-bold text-gray-600">Received By</div>
-                     </div>
-                     <div className="text-center">
-                        <div className="h-16 mb-2 flex justify-center">
-                           {stampImage && <img src={stampImage} className="h-full object-contain" />}
-                        </div>
-                        <div className="border-t border-gray-400 w-40 pt-2 text-sm font-bold text-gray-600">Authorized Signatory</div>
-                     </div>
+                 {/* Stamp & Sign */}
+                 <div className="absolute bottom-[20mm] right-[20mm] w-48 text-center">
+                    {stampImage && (
+                       <img src={stampImage} className="h-16 w-auto mx-auto mb-2 object-contain" alt="Stamp" />
+                    )}
+                    <div className="border-t border-gray-400 pt-2 text-gray-600 text-sm">Stamp & Sign</div>
                  </div>
              </div>
            </PreviewScaler>
