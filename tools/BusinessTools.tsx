@@ -13,6 +13,7 @@ interface InvoiceItem {
   desc: string;
   qty: number;
   rate: number;
+  amount?: number; // Added for manual override
 }
 
 interface ChallanItem {
@@ -120,11 +121,17 @@ export const InvoiceGenerator: React.FC = () => {
       code: 'MATERIAL', 
       desc: 'Wooden Cupboard with Installation. Dimension of cupboard is 6ftx6ftx1.5ft. Cupboard required to have a total of 12 cabinet, 6 above, 6 below similar as attached picture', 
       qty: 1, 
-      rate: 86500 
+      rate: 86500,
+      amount: 86500
     }
   ]);
 
-  const subtotal = items.reduce((sum, item) => sum + (item.qty * item.rate), 0);
+  // Helper to safely get the effective amount for calculation
+  const getItemAmount = (item: InvoiceItem) => {
+    return item.amount !== undefined ? item.amount : (item.qty * item.rate);
+  };
+
+  const subtotal = items.reduce((sum, item) => sum + getItemAmount(item), 0);
   const taxAmount = (subtotal * taxRate) / 100;
   const grandTotal = subtotal + taxAmount;
 
@@ -179,9 +186,27 @@ export const InvoiceGenerator: React.FC = () => {
     }
   };
 
-  const addItem = () => setItems([...items, { id: Date.now().toString(), code: '', desc: '', qty: 1, rate: 0 }]);
+  const addItem = () => setItems([...items, { id: Date.now().toString(), code: '', desc: '', qty: 1, rate: 0, amount: 0 }]);
   const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
-  const updateItem = (id: string, field: keyof InvoiceItem, val: string | number) => setItems(items.map(i => i.id === id ? { ...i, [field]: val } : i));
+  
+  const updateItem = (id: string, field: keyof InvoiceItem, val: string | number) => {
+    setItems(items.map(i => {
+      if (i.id !== id) return i;
+      
+      const newItem = { ...i, [field]: val };
+      
+      // Auto-calculate amount if qty or rate changes
+      if (field === 'qty' || field === 'rate') {
+        const q = field === 'qty' ? Number(val) : i.qty;
+        const r = field === 'rate' ? Number(val) : i.rate;
+        newItem.amount = q * r;
+      }
+      
+      // If user manually changes amount, we respect it (it is already set via [field]: val)
+      
+      return newItem;
+    }));
+  };
 
   // --- PDF Generation ---
   const downloadPdf = () => {
@@ -253,10 +278,13 @@ export const InvoiceGenerator: React.FC = () => {
     autoTable(doc, {
       startY: tableStartY,
       head: [['S. No', 'Item Code', 'Description', 'Qty', 'Unit Price', 'Amount', 'Total Amount']],
-      body: items.map((item, index) => [
-        index + 1, item.code, item.desc, item.qty, formatNumber(item.rate),
-        formatNumber(item.qty * item.rate), formatNumber(item.qty * item.rate)
-      ]),
+      body: items.map((item, index) => {
+        const amt = getItemAmount(item);
+        return [
+          index + 1, item.code, item.desc, item.qty, formatNumber(item.rate),
+          formatNumber(amt), formatNumber(amt)
+        ];
+      }),
       theme: 'plain',
       styles: { fontSize: 9, cellPadding: 3, textColor: 0, valign: 'top' },
       headStyles: { fillColor: false, textColor: [59, 130, 246], fontStyle: 'bold' },
@@ -357,7 +385,7 @@ export const InvoiceGenerator: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                  <div>
                     <label className="text-xs font-bold text-blue-600 dark:text-slate-400 mb-2 block uppercase tracking-wide">Currency</label>
-                    <div className="flex items-center bg-white dark:bg-slate-950 rounded-xl border border-blue-200 dark:border-slate-700 overflow-hidden focus-within:ring-2 ring-blue-500">
+                    <div className="flex items-center bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-slate-700 overflow-hidden focus-within:ring-2 ring-blue-500">
                       <span className="pl-3 pr-2 text-gray-400"><DollarSign className="w-4 h-4"/></span>
                       <input className="w-full p-3 text-sm outline-none bg-transparent dark:text-white" value={currencySymbol} onChange={e=>setCurrencySymbol(e.target.value)} placeholder="e.g. $" />
                     </div>
@@ -437,20 +465,31 @@ export const InvoiceGenerator: React.FC = () => {
                         </div>
                         <div className="col-span-1 md:col-span-2">
                            <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Amount</label>
-                           <div className="w-full p-2 text-sm bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 dark:text-slate-400 font-mono">
-                             {formatNumber(item.qty * item.rate)}
-                           </div>
+                           <input 
+                             type="number" 
+                             className={inputClasses + " p-2 text-sm bg-gray-100 dark:bg-slate-900 font-mono"} 
+                             value={item.amount !== undefined ? item.amount : (item.qty * item.rate)} 
+                             onChange={e=>updateItem(item.id, 'amount', Number(e.target.value))} 
+                           />
                         </div>
                         <div className="col-span-1 md:col-span-2">
                            <label className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1 block uppercase">Total Amount</label>
-                           <div className="w-full p-2 text-sm bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl text-blue-700 dark:text-blue-300 font-bold font-mono">
-                             {formatNumber(item.qty * item.rate)}
-                           </div>
+                           <input 
+                             type="number" 
+                             className={inputClasses + " p-2 text-sm bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold font-mono"} 
+                             value={item.amount !== undefined ? item.amount : (item.qty * item.rate)} 
+                             onChange={e=>updateItem(item.id, 'amount', Number(e.target.value))} 
+                           />
                         </div>
                         {/* Row 3: Description */}
                         <div className="col-span-1 md:col-span-12">
                            <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Description</label>
-                           <TextArea className="min-h-[80px]" rows={2} value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
+                           <TextArea 
+                             className="min-h-[80px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white" 
+                             rows={2} 
+                             value={item.desc} 
+                             onChange={e=>updateItem(item.id, 'desc', e.target.value)} 
+                           />
                         </div>
                      </div>
                   </div>
@@ -540,8 +579,8 @@ export const InvoiceGenerator: React.FC = () => {
                             <td className="py-3 pr-4 text-gray-600 leading-snug whitespace-pre-wrap">{item.desc}</td>
                             <td className="py-3 text-center">{item.qty}</td>
                             <td className="py-3 text-right text-gray-600">{formatNumber(item.rate)}</td>
-                            <td className="py-3 text-right font-bold text-gray-800">{formatNumber(item.qty * item.rate)}</td>
-                            <td className="py-3 text-right text-gray-800">{formatNumber(item.qty * item.rate)}</td>
+                            <td className="py-3 text-right font-bold text-gray-800">{formatNumber(getItemAmount(item))}</td>
+                            <td className="py-3 text-right text-gray-800">{formatNumber(getItemAmount(item))}</td>
                          </tr>
                       ))}
                    </tbody>

@@ -61,13 +61,13 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   const baseStyle = "rounded-xl font-medium transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center";
   const sizeStyles = {
     sm: "px-3 py-2 text-sm",
-    md: "px-5 py-2.5 text-base", // Larger touch target
+    md: "px-5 py-2.5 text-base", 
     lg: "px-6 py-3.5 text-lg"
   };
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 shadow-md shadow-blue-500/20",
     secondary: "bg-gray-800 text-white hover:bg-gray-900 dark:bg-slate-700 dark:hover:bg-slate-600",
-    outline: "border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 bg-transparent",
+    outline: "border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 bg-transparent",
     danger: "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 border border-transparent"
   };
   return <button className={`${baseStyle} ${sizeStyles[size]} ${variants[variant]} ${className}`} {...props} />;
@@ -76,10 +76,10 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 // Text Area
 export const TextArea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = (props) => (
   <textarea 
-    className="w-full p-4 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-sans text-base md:text-sm bg-white dark:bg-slate-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 resize-y min-h-[120px]"
+    className={`w-full p-4 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-sans text-base md:text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 resize-y min-h-[120px] ${props.className || ''}`}
     {...props}
   />
 );
 
 // Generic Input styling helper
-export const inputClasses = "w-full p-3 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base md:text-sm bg-white dark:bg-slate-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500";
+export const inputClasses = "w-full p-3 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base md:text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500";
