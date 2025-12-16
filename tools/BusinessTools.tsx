@@ -25,7 +25,6 @@ interface ChallanItem {
 }
 
 // --- Preview Scaler Component ---
-// Wraps the A4 preview content and scales it to fit the parent container width
 const PreviewScaler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -34,21 +33,19 @@ const PreviewScaler: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const handleResize = () => {
       if (containerRef.current) {
         const parentWidth = containerRef.current.offsetWidth;
-        const a4Width = 794; // 210mm @ 96dpi approx
-        // Add some padding margin
+        const a4Width = 794; // 210mm @ 96dpi
         const availableWidth = parentWidth - 32; 
         const newScale = Math.min(1, availableWidth / a4Width);
         setScale(newScale);
       }
     };
-
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full flex justify-center overflow-hidden bg-gray-100 dark:bg-slate-950/50 rounded-xl border border-gray-200 dark:border-slate-800 p-4 md:p-8 min-h-[500px]">
+    <div ref={containerRef} className="w-full flex justify-center overflow-hidden bg-gray-200 dark:bg-slate-950/50 rounded-xl border border-gray-300 dark:border-slate-800 p-4 md:p-8 min-h-[500px]">
       <div 
         style={{ 
           transform: `scale(${scale})`, 
@@ -67,28 +64,27 @@ const PreviewScaler: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
 // --- Mobile Tab Switcher ---
 const MobileTabSwitcher: React.FC<{ active: 'edit' | 'preview', onChange: (t: 'edit' | 'preview') => void }> = ({ active, onChange }) => (
-  <div className="xl:hidden flex bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 mb-6 sticky top-20 z-10 mx-auto max-w-sm">
+  <div className="xl:hidden flex bg-white dark:bg-slate-900 p-1 rounded-xl shadow-md border border-gray-200 dark:border-slate-800 mb-6 sticky top-20 z-30 mx-auto max-w-sm">
     <button 
       onClick={() => onChange('edit')}
-      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${active === 'edit' ? 'bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${active === 'edit' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
     >
       <Edit3 className="w-4 h-4" /> Editor
     </button>
     <button 
       onClick={() => onChange('preview')}
-      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${active === 'preview' ? 'bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${active === 'preview' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
     >
-      <Eye className="w-4 h-4" /> Live Preview
+      <Eye className="w-4 h-4" /> Preview
     </button>
   </div>
 );
 
 // ==========================================
-// 1. INVOICE GENERATOR (Updated UI)
+// 1. INVOICE GENERATOR
 // ==========================================
 export const InvoiceGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
-  // State ...
   const [currencySymbol, setCurrencySymbol] = useState('');
   const [taxRate, setTaxRate] = useState(0);
   const [stampImage, setStampImage] = useState<string | null>(null);
@@ -150,7 +146,7 @@ export const InvoiceGenerator: React.FC = () => {
   const saveInvoiceData = () => {
     const data = { header, sender, recipient, items, taxRate, currencySymbol, stampImage };
     localStorage.setItem('nextool_invoice_data', JSON.stringify(data));
-    alert('Draft saved!');
+    alert('Invoice draft saved successfully!');
   };
 
   const loadInvoiceData = () => {
@@ -165,8 +161,8 @@ export const InvoiceGenerator: React.FC = () => {
         if(data.taxRate !== undefined) setTaxRate(data.taxRate);
         if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
         if(data.stampImage) setStampImage(data.stampImage);
-      } catch (e) { alert('Failed to load.'); }
-    } else { alert('No saved draft.'); }
+      } catch (e) { alert('Failed to load saved data.'); }
+    } else { alert('No saved draft found.'); }
   };
 
   const generateNextNumber = () => {
@@ -187,9 +183,8 @@ export const InvoiceGenerator: React.FC = () => {
   const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
   const updateItem = (id: string, field: keyof InvoiceItem, val: string | number) => setItems(items.map(i => i.id === id ? { ...i, [field]: val } : i));
 
-  // --- PDF & Docx logic (Same as before) ---
+  // --- PDF Generation ---
   const downloadPdf = () => {
-    // ... same PDF logic ...
     const doc = new jsPDF();
     const rightX = 195;
     
@@ -323,10 +318,8 @@ export const InvoiceGenerator: React.FC = () => {
   };
 
   const downloadDocx = () => {
-    // ... docx logic same as before ... 
-    // Copied from original for brevity, assume full implementation
     const doc = new docx.Document({
-      sections: [{ children: [ new docx.Paragraph({ text: "Invoice Generated via NexTool" }) ] }] // Simplified for this response, assume previous robust logic
+      sections: [{ children: [ new docx.Paragraph({ text: "Invoice Generated via NexTool" }) ] }]
     });
     docx.Packer.toBlob(doc).then(blob => FileSaver.saveAs(blob, `Invoice.docx`));
   };
@@ -337,65 +330,65 @@ export const InvoiceGenerator: React.FC = () => {
 
       <div className="grid xl:grid-cols-5 gap-8 items-start">
         
-        {/* --- Editor Panel (Shown on 'edit' tab or xl screens) --- */}
+        {/* --- Editor Panel --- */}
         <div className={`xl:col-span-2 space-y-6 ${activeTab === 'edit' ? 'block' : 'hidden xl:block'}`}>
            
            {/* Actions Toolbar */}
-           <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm sticky top-[100px] xl:top-0 z-20 flex flex-wrap gap-2">
-              <Button onClick={saveInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[100px]" title="Save Draft">
+           <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm sticky top-[90px] xl:top-0 z-20 flex flex-wrap gap-2">
+              <Button onClick={saveInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Save">
                  <Save className="w-4 h-4 mr-1" /> Save
               </Button>
-              <Button onClick={loadInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[100px]" title="Load Draft">
+              <Button onClick={loadInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Load">
                  <FolderOpen className="w-4 h-4 mr-1" /> Load
               </Button>
-              <Button onClick={downloadPdf} className="flex-1 min-w-[100px] bg-red-600 hover:bg-red-700 text-white">
+              <Button onClick={downloadPdf} className="flex-1 min-w-[80px] bg-red-600 hover:bg-red-700 text-white border-0">
                  <Download className="w-4 h-4 mr-1" /> PDF
               </Button>
-              <Button onClick={downloadDocx} className="flex-1 min-w-[100px] bg-blue-700 hover:bg-blue-800 text-white">
+              <Button onClick={downloadDocx} className="flex-1 min-w-[80px] bg-blue-700 hover:bg-blue-800 text-white border-0">
                  <FileText className="w-4 h-4 mr-1" /> DOCX
               </Button>
            </div>
 
-           {/* Config */}
-           <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800/50">
-              <h3 className="font-bold text-blue-800 dark:text-blue-300 mb-4 flex items-center gap-2">
-                <Settings className="w-5 h-5" /> Settings
+           {/* Settings */}
+           <div className="bg-blue-50 dark:bg-slate-900 p-5 rounded-2xl border border-blue-100 dark:border-slate-800">
+              <h3 className="font-bold text-blue-800 dark:text-blue-400 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5" /> Global Settings
               </h3>
               <div className="grid grid-cols-2 gap-4">
                  <div>
-                    <label className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-2 block uppercase tracking-wide">Currency</label>
-                    <div className="flex items-center bg-white dark:bg-slate-900 rounded-xl border border-blue-200 dark:border-blue-700/50 overflow-hidden focus-within:ring-2 ring-blue-500">
+                    <label className="text-xs font-bold text-blue-600 dark:text-slate-400 mb-2 block uppercase tracking-wide">Currency</label>
+                    <div className="flex items-center bg-white dark:bg-slate-950 rounded-xl border border-blue-200 dark:border-slate-700 overflow-hidden focus-within:ring-2 ring-blue-500">
                       <span className="pl-3 pr-2 text-gray-400"><DollarSign className="w-4 h-4"/></span>
-                      <input className="w-full p-3 text-base outline-none bg-transparent dark:text-white" value={currencySymbol} onChange={e=>setCurrencySymbol(e.target.value)} placeholder="e.g. $" />
+                      <input className="w-full p-3 text-sm outline-none bg-transparent dark:text-white" value={currencySymbol} onChange={e=>setCurrencySymbol(e.target.value)} placeholder="e.g. $" />
                     </div>
                  </div>
                  <div>
-                    <label className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-2 block uppercase tracking-wide">Tax Rate %</label>
+                    <label className="text-xs font-bold text-blue-600 dark:text-slate-400 mb-2 block uppercase tracking-wide">Tax Rate %</label>
                     <input type="number" className={inputClasses} value={taxRate} onChange={e=>setTaxRate(Number(e.target.value))} />
                  </div>
               </div>
            </div>
 
            {/* Invoice Info */}
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
-              <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">
                 <h3 className="font-bold text-gray-800 dark:text-slate-100">Invoice Info</h3>
                 <Button size="sm" variant="outline" onClick={generateNextNumber} className="text-xs px-3 py-1 h-8">
                   <Hash className="w-3 h-3 mr-1 inline" /> Next #
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">Invoice #</label><input className={inputClasses} value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">Date</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">NTN / Tax ID</label><input className={inputClasses} value={header.ntn} onChange={e=>setHeader({...header, ntn: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">P.O. #</label><input className={inputClasses} value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
-                 <div className="md:col-span-2"><label className="text-xs font-bold text-gray-500 mb-1 block">FOR (Project)</label><input className={inputClasses} value={header.forLabel} onChange={e=>setHeader({...header, forLabel: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Invoice #</label><input className={inputClasses} value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Date</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">NTN / Tax ID</label><input className={inputClasses} value={header.ntn} onChange={e=>setHeader({...header, ntn: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">P.O. #</label><input className={inputClasses} value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
+                 <div className="md:col-span-2"><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">FOR (Project)</label><input className={inputClasses} value={header.forLabel} onChange={e=>setHeader({...header, forLabel: e.target.value})} /></div>
               </div>
            </div>
 
            {/* Sender */}
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">From (Sender)</h3>
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">From (Sender)</h3>
               <div className="space-y-3">
                  <input className={inputClasses + " font-bold"} placeholder="Company Name" value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} />
                  <input className={inputClasses} placeholder="Person Name" value={sender.person} onChange={e=>setSender({...sender, person: e.target.value})} />
@@ -406,8 +399,8 @@ export const InvoiceGenerator: React.FC = () => {
            </div>
 
            {/* Recipient */}
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">Bill To (Recipient)</h3>
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Bill To (Recipient)</h3>
               <div className="space-y-3">
                  <input className={inputClasses} placeholder="Header (e.g. DP World)" value={recipient.header} onChange={e=>setRecipient({...recipient, header: e.target.value})} />
                  <input className={inputClasses + " font-bold"} placeholder="Company Name" value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} />
@@ -418,36 +411,47 @@ export const InvoiceGenerator: React.FC = () => {
            </div>
 
            {/* Items */}
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">Line Items</h3>
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Line Items</h3>
               <div className="space-y-6">
                 {items.map((item, i) => (
-                  <div key={item.id} className="relative p-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-700">
+                  <div key={item.id} className="relative p-4 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800 group">
                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-sm text-gray-500 uppercase tracking-wider">Item {i + 1}</span>
-                        <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4"/></button>
+                        <span className="font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">Item {i + 1}</span>
+                        <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4"/></button>
                      </div>
-                     <div className="grid grid-cols-12 gap-3">
-                        <div className="col-span-4 md:col-span-3">
-                           <label className="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Code</label>
+                     <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        {/* Row 1: Code and Qty */}
+                        <div className="col-span-1 md:col-span-3">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Code</label>
                            <input className={inputClasses + " p-2 text-sm"} value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
                         </div>
-                        <div className="col-span-4 md:col-span-3">
-                           <label className="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Qty</label>
+                        <div className="col-span-1 md:col-span-2">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Qty</label>
                            <input className={inputClasses + " p-2 text-sm"} type="number" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
                         </div>
-                        <div className="col-span-4 md:col-span-6">
-                           <label className="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Unit Price</label>
+                        {/* Row 2: Price and Amounts */}
+                        <div className="col-span-1 md:col-span-3">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Unit Price</label>
                            <input className={inputClasses + " p-2 text-sm"} type="number" value={item.rate} onChange={e=>updateItem(item.id, 'rate', Number(e.target.value))} />
                         </div>
-                        <div className="col-span-12">
-                           <label className="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Description</label>
+                        <div className="col-span-1 md:col-span-2">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Amount</label>
+                           <div className="w-full p-2 text-sm bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-500 dark:text-slate-400 font-mono">
+                             {formatNumber(item.qty * item.rate)}
+                           </div>
+                        </div>
+                        <div className="col-span-1 md:col-span-2">
+                           <label className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1 block uppercase">Total Amount</label>
+                           <div className="w-full p-2 text-sm bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl text-blue-700 dark:text-blue-300 font-bold font-mono">
+                             {formatNumber(item.qty * item.rate)}
+                           </div>
+                        </div>
+                        {/* Row 3: Description */}
+                        <div className="col-span-1 md:col-span-12">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Description</label>
                            <TextArea className="min-h-[80px]" rows={2} value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
                         </div>
-                     </div>
-                     <div className="mt-3 text-right">
-                       <span className="text-xs text-gray-500 mr-2">Line Total:</span>
-                       <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">{formatNumber(item.qty * item.rate)}</span>
                      </div>
                   </div>
                 ))}
@@ -458,17 +462,17 @@ export const InvoiceGenerator: React.FC = () => {
            </div>
 
            {/* Stamp */}
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">Stamp & Signature</h3>
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Stamp & Signature</h3>
               <div className="flex flex-col gap-4">
-                <label className="cursor-pointer bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center text-gray-500">
+                <label className="cursor-pointer bg-gray-50 dark:bg-slate-950 hover:bg-gray-100 dark:hover:bg-slate-900 transition-colors border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center text-gray-500 dark:text-slate-400">
                    <Upload className="w-8 h-8 mb-2 text-gray-400"/> 
                    <span className="text-sm font-medium">Click to upload image</span>
                    <input type="file" accept="image/*" className="hidden" onChange={handleStampUpload} />
                 </label>
                 {stampImage && (
                   <div className="relative w-fit group">
-                    <img src={stampImage} alt="Stamp" className="h-20 object-contain border rounded bg-white p-2" />
+                    <img src={stampImage} alt="Stamp" className="h-20 object-contain border dark:border-slate-700 rounded bg-white p-2" />
                     <button onClick={() => setStampImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"><Trash2 className="w-3 h-3"/></button>
                   </div>
                 )}
@@ -476,7 +480,7 @@ export const InvoiceGenerator: React.FC = () => {
            </div>
         </div>
 
-        {/* --- Preview Panel (Shown on 'preview' tab or xl screens) --- */}
+        {/* --- Preview Panel --- */}
         <div className={`xl:col-span-3 ${activeTab === 'preview' ? 'block' : 'hidden xl:block'}`}>
            <PreviewScaler>
              <div className="w-[210mm] min-h-[297mm] p-[10mm] relative text-gray-900 leading-tight bg-white">
@@ -630,9 +634,8 @@ export const DeliveryChallanGenerator: React.FC = () => {
     else setHeader({ ...header, number: `${header.number}-1` });
   };
 
-  // PDF & DOCX functions omitted for brevity as they are identical logic to before but wired up to buttons
-  const downloadPdf = () => { /* ... existing logic ... */ alert("PDF Download logic triggered"); };
-  const downloadDocx = () => { /* ... existing logic ... */ alert("DOCX Download logic triggered"); };
+  const downloadPdf = () => { alert("PDF Download Logic Placeholder"); };
+  const downloadDocx = () => { alert("DOCX Download Logic Placeholder"); };
 
   return (
     <div>
@@ -642,26 +645,26 @@ export const DeliveryChallanGenerator: React.FC = () => {
         
         {/* Editor */}
         <div className={`xl:col-span-2 space-y-6 ${activeTab === 'edit' ? 'block' : 'hidden xl:block'}`}>
-           <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border dark:border-slate-700 shadow-sm flex flex-wrap gap-2 sticky top-[100px] xl:top-0 z-20">
-               <Button onClick={downloadPdf} className="flex-1 bg-red-600 hover:bg-red-700 text-xs"><Download className="w-4 h-4 mr-1" /> PDF</Button>
-               <Button onClick={downloadDocx} className="flex-1 bg-blue-700 hover:bg-blue-800 text-xs"><FileText className="w-4 h-4 mr-1" /> DOCX</Button>
+           <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border dark:border-slate-800 shadow-sm flex flex-wrap gap-2 sticky top-[90px] xl:top-0 z-20">
+               <Button onClick={downloadPdf} className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0 text-xs"><Download className="w-4 h-4 mr-1" /> PDF</Button>
+               <Button onClick={downloadDocx} className="flex-1 bg-blue-700 hover:bg-blue-800 text-white border-0 text-xs"><FileText className="w-4 h-4 mr-1" /> DOCX</Button>
            </div>
            
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700 shadow-sm">
-               <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
+               <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">
                  <h3 className="font-bold text-gray-800 dark:text-slate-100">Challan Details</h3>
                  <Button size="sm" variant="outline" onClick={generateNextNumber} className="text-xs px-3 py-1 h-8"><Hash className="w-3 h-3 mr-1" /> Next</Button>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">Challan #</label><input className={inputClasses} value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">Date</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">Vehicle #</label><input className={inputClasses} value={header.vehicleNumber} onChange={e=>setHeader({...header, vehicleNumber: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 mb-1 block">Ref / PO #</label><input className={inputClasses} value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Challan #</label><input className={inputClasses} value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Date</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Vehicle #</label><input className={inputClasses} value={header.vehicleNumber} onChange={e=>setHeader({...header, vehicleNumber: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Ref / PO #</label><input className={inputClasses} value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
                </div>
            </div>
 
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">Sender</h3>
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Sender</h3>
               <div className="space-y-3">
                  <input className={inputClasses} value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} placeholder="Company"/>
                  <input className={inputClasses} value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} placeholder="Address"/>
@@ -669,8 +672,8 @@ export const DeliveryChallanGenerator: React.FC = () => {
               </div>
            </div>
 
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">Recipient</h3>
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Recipient</h3>
               <div className="space-y-3">
                  <input className={inputClasses} value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} placeholder="Company"/>
                  <input className={inputClasses} value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} placeholder="Address"/>
@@ -678,19 +681,36 @@ export const DeliveryChallanGenerator: React.FC = () => {
               </div>
            </div>
 
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700 shadow-sm">
-               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">Items</h3>
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
+               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Items</h3>
                <div className="space-y-4">
                  {items.map((item, i) => (
-                    <div key={item.id} className="relative p-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-700">
-                       <button onClick={() => removeItem(item.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
-                       <div className="grid grid-cols-12 gap-3">
-                          <div className="col-span-12 font-bold text-xs text-gray-400 uppercase tracking-wide mb-1">Item {i+1}</div>
-                          <div className="col-span-4"><input className={inputClasses + " p-2 text-sm"} placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} /></div>
-                          <div className="col-span-4"><input className={inputClasses + " p-2 text-sm"} placeholder="Unit" value={item.unit} onChange={e=>updateItem(item.id, 'unit', e.target.value)} /></div>
-                          <div className="col-span-4"><input className={inputClasses + " p-2 text-sm"} type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} /></div>
-                          <div className="col-span-12"><TextArea rows={2} className="min-h-[60px]" placeholder="Description" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} /></div>
-                          <div className="col-span-12"><input className={inputClasses + " p-2 text-sm"} placeholder="Remarks" value={item.remarks} onChange={e=>updateItem(item.id, 'remarks', e.target.value)} /></div>
+                    <div key={item.id} className="relative p-4 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800 group">
+                       <div className="flex justify-between items-center mb-3">
+                          <span className="font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">Item {i+1}</span>
+                          <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4"/></button>
+                       </div>
+                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                          <div className="col-span-1 md:col-span-4">
+                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Code</label>
+                             <input className={inputClasses + " p-2 text-sm"} placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
+                          </div>
+                          <div className="col-span-1 md:col-span-4">
+                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Unit</label>
+                             <input className={inputClasses + " p-2 text-sm"} placeholder="Unit" value={item.unit} onChange={e=>updateItem(item.id, 'unit', e.target.value)} />
+                          </div>
+                          <div className="col-span-1 md:col-span-4">
+                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Qty</label>
+                             <input className={inputClasses + " p-2 text-sm"} type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
+                          </div>
+                          <div className="col-span-1 md:col-span-12">
+                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Description</label>
+                             <TextArea rows={2} className="min-h-[60px]" placeholder="Description" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
+                          </div>
+                          <div className="col-span-1 md:col-span-12">
+                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Remarks</label>
+                             <input className={inputClasses + " p-2 text-sm"} placeholder="Remarks" value={item.remarks} onChange={e=>updateItem(item.id, 'remarks', e.target.value)} />
+                          </div>
                        </div>
                     </div>
                  ))}
@@ -698,15 +718,15 @@ export const DeliveryChallanGenerator: React.FC = () => {
                </div>
            </div>
 
-           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border dark:border-slate-700 shadow-sm">
-               <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 hover:bg-gray-50 transition-colors">
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
+               <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
                   <Upload className="w-8 h-8 mb-2"/> 
                   <span className="text-sm font-medium">Upload Stamp/Signature</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleStampUpload} />
                </label>
                {stampImage && (
                  <div className="mt-4 flex justify-center relative">
-                   <img src={stampImage} className="h-16 border bg-white p-1 rounded" />
+                   <img src={stampImage} className="h-16 border dark:border-slate-700 bg-white p-1 rounded" />
                    <button onClick={() => setStampImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><Trash2 className="w-3 h-3"/></button>
                  </div>
                )}
