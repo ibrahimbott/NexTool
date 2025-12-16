@@ -50,7 +50,7 @@ export const ImageConverter: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:bg-white hover:border-blue-400 transition-colors">
+      <div className="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-8 text-center bg-gray-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 transition-colors">
         <input 
           type="file" 
           accept="image/*" 
@@ -59,21 +59,21 @@ export const ImageConverter: React.FC = () => {
           id="img-upload" 
         />
         <label htmlFor="img-upload" className="cursor-pointer flex flex-col items-center">
-          <Upload className="w-12 h-12 text-gray-400 mb-4" />
-          <span className="text-lg font-medium text-gray-700">
+          <Upload className="w-12 h-12 text-gray-400 dark:text-slate-500 mb-4" />
+          <span className="text-lg font-medium text-gray-700 dark:text-slate-200">
             {selectedFile ? selectedFile.name : "Click to upload an image"}
           </span>
-          <span className="text-sm text-gray-500 mt-2">Supports JPG, PNG, WEBP, GIF</span>
+          <span className="text-sm text-gray-500 dark:text-slate-400 mt-2">Supports JPG, PNG, WEBP, GIF</span>
         </label>
       </div>
 
       {preview && (
         <div className="space-y-6">
-           <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col items-center">
+           <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm flex flex-col items-center">
              <img src={preview} alt="Preview" className="max-h-64 object-contain mb-4" />
              <canvas ref={canvasRef} className="hidden" />
              
-             <div className="w-full max-w-md space-y-2">
+             <div className="w-full max-w-md space-y-2 text-gray-700 dark:text-slate-300">
                 <div className="flex justify-between text-sm font-medium">
                   <label>Compression Quality (for JPG/WEBP)</label>
                   <span>{Math.round(quality * 100)}%</span>
@@ -151,7 +151,7 @@ export const ImageToPdf: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <input type="file" accept="image/jpeg, image/png" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+      <input type="file" accept="image/jpeg, image/png" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 dark:text-slate-400"/>
       {preview && (
         <div className="space-y-4 text-center">
           <img src={preview} className="max-h-64 mx-auto rounded shadow" />
@@ -207,10 +207,10 @@ export const ImageColorPicker: React.FC = () => {
 
   return (
     <div className="space-y-6">
-       <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+       <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 dark:text-slate-400"/>
        
        <div className="grid md:grid-cols-3 gap-6">
-         <div className="md:col-span-2 overflow-auto bg-gray-100 p-2 rounded relative">
+         <div className="md:col-span-2 overflow-auto bg-gray-100 dark:bg-slate-900 p-2 rounded relative border dark:border-slate-700">
            <img ref={imgRef} src={file} className="hidden" />
            {file && (
              <canvas 
@@ -220,7 +220,7 @@ export const ImageColorPicker: React.FC = () => {
                style={{ maxHeight: '500px' }}
              />
            )}
-           {!file && <div className="text-center py-20 text-gray-400">Upload image to pick colors</div>}
+           {!file && <div className="text-center py-20 text-gray-400 dark:text-slate-500">Upload image to pick colors</div>}
          </div>
          
          <div className="space-y-4">
@@ -230,16 +230,16 @@ export const ImageColorPicker: React.FC = () => {
            {color && (
              <div className="space-y-2">
                <div>
-                 <label className="text-xs font-bold text-gray-500">HEX</label>
+                 <label className="text-xs font-bold text-gray-500 dark:text-slate-400">HEX</label>
                  <div className="flex gap-2">
-                   <input className="w-full p-2 border rounded" readOnly value={hex} />
+                   <input className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" readOnly value={hex} />
                    <Button size="sm" onClick={() => navigator.clipboard.writeText(hex)}><Copy className="w-4 h-4" /></Button>
                  </div>
                </div>
                <div>
-                 <label className="text-xs font-bold text-gray-500">RGB</label>
+                 <label className="text-xs font-bold text-gray-500 dark:text-slate-400">RGB</label>
                  <div className="flex gap-2">
-                   <input className="w-full p-2 border rounded" readOnly value={`rgb(${color.r}, ${color.g}, ${color.b})`} />
+                   <input className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" readOnly value={`rgb(${color.r}, ${color.g}, ${color.b})`} />
                    <Button size="sm" onClick={() => navigator.clipboard.writeText(`rgb(${color.r}, ${color.g}, ${color.b})`)}><Copy className="w-4 h-4" /></Button>
                  </div>
                </div>
@@ -307,22 +307,22 @@ export const ImageResizer: React.FC = () => {
 
    return (
      <div className="space-y-6">
-        <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+        <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 dark:text-slate-400"/>
         
         {preview && (
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gray-100 p-4 rounded flex items-center justify-center">
+            <div className="bg-gray-100 dark:bg-slate-900 p-4 rounded flex items-center justify-center border dark:border-slate-700">
               <img src={preview} style={{ maxWidth: '100%', maxHeight: '300px' }} />
               <canvas ref={canvasRef} className="hidden" />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 text-gray-700 dark:text-slate-300">
                <div>
                  <label className="block text-sm font-bold mb-1">Width (px)</label>
-                 <input type="number" value={width} onChange={(e) => handleWidthChange(Number(e.target.value))} className="w-full p-2 border rounded" />
+                 <input type="number" value={width} onChange={(e) => handleWidthChange(Number(e.target.value))} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
                </div>
                <div>
                  <label className="block text-sm font-bold mb-1">Height (px)</label>
-                 <input type="number" value={height} onChange={(e) => handleHeightChange(Number(e.target.value))} className="w-full p-2 border rounded" />
+                 <input type="number" value={height} onChange={(e) => handleHeightChange(Number(e.target.value))} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
                </div>
                <label className="flex items-center gap-2 text-sm">
                  <input type="checkbox" checked={ratio} onChange={(e) => setRatio(e.target.checked)} />
@@ -349,8 +349,8 @@ export const BoxShadowGenerator: React.FC = () => {
 
   return (
     <div className="grid md:grid-cols-2 gap-8">
-      <div className="space-y-4 bg-white p-6 rounded-xl border">
-        <h3 className="font-bold text-gray-700 mb-4">Settings</h3>
+      <div className="space-y-4 bg-white dark:bg-slate-800 p-6 rounded-xl border dark:border-slate-700 text-gray-700 dark:text-slate-300">
+        <h3 className="font-bold mb-4">Settings</h3>
         
         {[
           { l: 'Horizontal', v: hOffset, s: setHOffset, min: -50, max: 50 },
@@ -424,7 +424,7 @@ export const ImageFilters: React.FC = () => {
 
    return (
      <div className="space-y-6">
-        <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+        <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 dark:text-slate-400"/>
         {file && (
           <div className="space-y-4">
              <div className="flex flex-wrap gap-2">
@@ -432,7 +432,7 @@ export const ImageFilters: React.FC = () => {
                    <Button key={f.name} size="sm" variant={filter === f.val ? 'primary' : 'outline'} onClick={() => setFilter(f.val)}>{f.name}</Button>
                 ))}
              </div>
-             <div className="flex justify-center border rounded-lg p-4 bg-gray-50 overflow-hidden">
+             <div className="flex justify-center border dark:border-slate-700 rounded-lg p-4 bg-gray-50 dark:bg-slate-900 overflow-hidden">
                <img src={file} style={{ filter: filter, maxWidth: '100%', maxHeight: '400px' }} className="transition-all" />
              </div>
           </div>
@@ -454,7 +454,7 @@ export const ImageFlipper: React.FC = () => {
 
    return (
      <div className="space-y-6">
-        <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+        <input type="file" accept="image/*" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 dark:text-slate-400"/>
         {file && (
           <div className="space-y-4">
              <div className="flex gap-2 justify-center flex-wrap">
@@ -463,7 +463,7 @@ export const ImageFlipper: React.FC = () => {
                 <Button size="sm" variant="outline" onClick={() => setScaleX(s => s * -1)}>Flip Horizontally</Button>
                 <Button size="sm" variant="outline" onClick={() => setScaleY(s => s * -1)}>Flip Vertically</Button>
              </div>
-             <div className="flex justify-center border rounded-lg p-4 bg-gray-50 overflow-hidden">
+             <div className="flex justify-center border dark:border-slate-700 rounded-lg p-4 bg-gray-50 dark:bg-slate-900 overflow-hidden">
                <img 
                  src={file} 
                  style={{ transform: `rotate(${rotate}deg) scale(${scaleX}, ${scaleY})`, maxWidth: '100%', maxHeight: '400px', transition: 'transform 0.3s' }} 
@@ -622,29 +622,29 @@ export const StudentCardGenerator: React.FC = () => {
     <div className="grid lg:grid-cols-2 gap-8">
       {/* Controls */}
       <div className="space-y-4">
-         <div className="bg-gray-50 p-4 rounded-xl border space-y-3">
-            <h3 className="font-bold text-gray-700">Card Details</h3>
+         <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 space-y-3">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200">Card Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-               <input className="p-2 border rounded" placeholder="Name" value={details.name} onChange={e => setDetails({...details, name: e.target.value})} />
-               <input className="p-2 border rounded" placeholder="ID Number" value={details.id} onChange={e => setDetails({...details, id: e.target.value})} />
-               <input className="p-2 border rounded" placeholder="University" value={details.university} onChange={e => setDetails({...details, university: e.target.value})} />
-               <input className="p-2 border rounded" placeholder="Course/Program" value={details.program} onChange={e => setDetails({...details, program: e.target.value})} />
-               <input className="p-2 border rounded" type="date" value={details.dob} onChange={e => setDetails({...details, dob: e.target.value})} />
-               <input className="p-2 border rounded" type="date" value={details.valid} onChange={e => setDetails({...details, valid: e.target.value})} />
+               <input className="p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Name" value={details.name} onChange={e => setDetails({...details, name: e.target.value})} />
+               <input className="p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="ID Number" value={details.id} onChange={e => setDetails({...details, id: e.target.value})} />
+               <input className="p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="University" value={details.university} onChange={e => setDetails({...details, university: e.target.value})} />
+               <input className="p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Course/Program" value={details.program} onChange={e => setDetails({...details, program: e.target.value})} />
+               <input className="p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" type="date" value={details.dob} onChange={e => setDetails({...details, dob: e.target.value})} />
+               <input className="p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" type="date" value={details.valid} onChange={e => setDetails({...details, valid: e.target.value})} />
             </div>
          </div>
 
          <div className="grid grid-cols-2 gap-4">
-             <div className="bg-gray-50 p-4 rounded-xl border">
-               <h3 className="font-bold text-gray-700 mb-2">Theme Color</h3>
+             <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700">
+               <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2">Theme Color</h3>
                <div className="flex gap-2">
                  <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} className="w-10 h-10 p-0 border-0 rounded cursor-pointer" />
-                 <span className="text-sm self-center text-gray-500 uppercase">{themeColor}</span>
+                 <span className="text-sm self-center text-gray-500 dark:text-slate-400 uppercase">{themeColor}</span>
                </div>
              </div>
-             <div className="bg-gray-50 p-4 rounded-xl border">
-                <h3 className="font-bold text-gray-700 mb-2">Student Photo</h3>
-                <input type="file" accept="image/*" onChange={handlePhoto} className="text-xs w-full" />
+             <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700">
+                <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2">Student Photo</h3>
+                <input type="file" accept="image/*" onChange={handlePhoto} className="text-xs w-full dark:text-slate-400" />
              </div>
          </div>
       </div>
@@ -653,7 +653,7 @@ export const StudentCardGenerator: React.FC = () => {
       <div className="flex flex-col items-center gap-6">
          <canvas 
            ref={canvasRef} 
-           className="w-full max-w-[500px] shadow-2xl rounded-xl border border-gray-200" 
+           className="w-full max-w-[500px] shadow-2xl rounded-xl border border-gray-200 dark:border-slate-700 bg-white" 
          />
          <Button size="lg" onClick={downloadCard} className="w-full max-w-[300px] shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0">
             <Download className="w-5 h-5 mr-2 inline" /> Download ID Card

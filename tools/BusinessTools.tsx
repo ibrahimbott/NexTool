@@ -421,7 +421,7 @@ export const InvoiceGenerator: React.FC = () => {
       {/* --- Controls (Left) --- */}
       <div className="xl:col-span-2 space-y-6 max-h-[calc(100vh-100px)] overflow-y-auto pr-2 custom-scrollbar">
          {/* Top Actions */}
-         <div className="bg-white p-4 rounded-xl border shadow-sm sticky top-0 z-20 flex flex-wrap gap-2">
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm sticky top-0 z-20 flex flex-wrap gap-2">
             <Button onClick={saveInvoiceData} variant="outline" size="sm" className="flex-1" title="Save Draft">
                <Save className="w-4 h-4 mr-1" /> Save
             </Button>
@@ -437,82 +437,82 @@ export const InvoiceGenerator: React.FC = () => {
          </div>
 
          {/* Configuration Panel */}
-         <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-            <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
+            <h3 className="font-bold text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
               <Settings className="w-4 h-4" /> Settings
             </h3>
             <div className="grid grid-cols-2 gap-4">
                <div>
-                  <label className="text-xs font-bold text-blue-600 mb-1 block">Currency</label>
-                  <div className="flex items-center bg-white rounded border border-blue-200">
+                  <label className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1 block">Currency</label>
+                  <div className="flex items-center bg-white dark:bg-slate-900 rounded border border-blue-200 dark:border-blue-700">
                     <span className="px-2 text-gray-500 text-sm"><DollarSign className="w-3 h-3"/></span>
-                    <input className="w-full p-1.5 text-sm outline-none rounded" value={currencySymbol} onChange={e=>setCurrencySymbol(e.target.value)} placeholder="e.g. $" />
+                    <input className="w-full p-1.5 text-sm outline-none rounded bg-transparent dark:text-white" value={currencySymbol} onChange={e=>setCurrencySymbol(e.target.value)} placeholder="e.g. $" />
                   </div>
                </div>
                <div>
-                  <label className="text-xs font-bold text-blue-600 mb-1 block">Tax Rate %</label>
-                  <input type="number" className="w-full p-1.5 border border-blue-200 rounded text-sm" value={taxRate} onChange={e=>setTaxRate(Number(e.target.value))} />
+                  <label className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1 block">Tax Rate %</label>
+                  <input type="number" className="w-full p-1.5 border border-blue-200 dark:border-blue-700 rounded text-sm bg-white dark:bg-slate-900 dark:text-white" value={taxRate} onChange={e=>setTaxRate(Number(e.target.value))} />
                </div>
             </div>
          </div>
 
          {/* Invoice Details */}
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <h3 className="font-bold text-gray-700 mb-3 border-b pb-2 flex items-center justify-between">
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-3 border-b dark:border-slate-700 pb-2 flex items-center justify-between">
               Invoice Info
               <Button size="sm" variant="outline" onClick={generateNextNumber} title="Generate Next Number">
                 <Hash className="w-3 h-3 mr-1 inline" /> Next #
               </Button>
             </h3>
-            <div className="grid grid-cols-2 gap-3">
-               <div><label className="text-xs text-gray-500">Invoice #</label><input className="w-full p-1.5 border rounded text-sm" value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
-               <div><label className="text-xs text-gray-500">Date</label><input type="date" className="w-full p-1.5 border rounded text-sm" value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
-               <div><label className="text-xs text-gray-500">NTN / Tax ID</label><input className="w-full p-1.5 border rounded text-sm" value={header.ntn} onChange={e=>setHeader({...header, ntn: e.target.value})} /></div>
-               <div><label className="text-xs text-gray-500">P.O. #</label><input className="w-full p-1.5 border rounded text-sm" value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
-               <div className="col-span-2"><label className="text-xs text-gray-500">FOR (Project/Ref)</label><input className="w-full p-1.5 border rounded text-sm" value={header.forLabel} onChange={e=>setHeader({...header, forLabel: e.target.value})} /></div>
+            <div className="grid grid-cols-2 gap-3 text-gray-500 dark:text-slate-400">
+               <div><label className="text-xs">Invoice #</label><input className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
+               <div><label className="text-xs">Date</label><input type="date" className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
+               <div><label className="text-xs">NTN / Tax ID</label><input className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.ntn} onChange={e=>setHeader({...header, ntn: e.target.value})} /></div>
+               <div><label className="text-xs">P.O. #</label><input className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
+               <div className="col-span-2"><label className="text-xs">FOR (Project/Ref)</label><input className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.forLabel} onChange={e=>setHeader({...header, forLabel: e.target.value})} /></div>
             </div>
          </div>
 
          {/* Sender Details */}
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <h3 className="font-bold text-gray-700 mb-2 border-b pb-2">Sender (From)</h3>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2 border-b dark:border-slate-700 pb-2">Sender (From)</h3>
             <div className="space-y-2">
-               <input className="w-full p-1 border rounded text-sm font-bold" placeholder="Company Name" value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm" placeholder="Person Name" value={sender.person} onChange={e=>setSender({...sender, person: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm" placeholder="Address L1" value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm" placeholder="Address L2" value={sender.address2} onChange={e=>setSender({...sender, address2: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm" placeholder="Phone" value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm font-bold bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Company Name" value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Person Name" value={sender.person} onChange={e=>setSender({...sender, person: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Address L1" value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Address L2" value={sender.address2} onChange={e=>setSender({...sender, address2: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Phone" value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} />
             </div>
          </div>
 
          {/* Recipient Details */}
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <h3 className="font-bold text-gray-700 mb-2 border-b pb-2">Recipient (Bill To)</h3>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2 border-b dark:border-slate-700 pb-2">Recipient (Bill To)</h3>
             <div className="space-y-2">
-               <input className="w-full p-1 border rounded text-sm" placeholder="Header (e.g. DP World)" value={recipient.header} onChange={e=>setRecipient({...recipient, header: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm font-bold" placeholder="Company Name" value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm" placeholder="Address L1" value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm" placeholder="Address L2" value={recipient.address2} onChange={e=>setRecipient({...recipient, address2: e.target.value})} />
-               <input className="w-full p-1 border rounded text-sm" placeholder="Contact/UAN" value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Header (e.g. DP World)" value={recipient.header} onChange={e=>setRecipient({...recipient, header: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm font-bold bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Company Name" value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Address L1" value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Address L2" value={recipient.address2} onChange={e=>setRecipient({...recipient, address2: e.target.value})} />
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" placeholder="Contact/UAN" value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} />
             </div>
          </div>
 
          {/* Items */}
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <h3 className="font-bold text-gray-700 mb-2 border-b pb-2">Items</h3>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2 border-b dark:border-slate-700 pb-2">Items</h3>
             <div className="space-y-4">
               {items.map((item, i) => (
-                <div key={item.id} className="p-3 bg-gray-50 rounded border text-sm relative group">
+                <div key={item.id} className="p-3 bg-gray-50 dark:bg-slate-900 rounded border dark:border-slate-700 text-sm relative group">
                    <button onClick={() => removeItem(item.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
-                   <div className="mb-1 font-bold text-gray-400">Item {i + 1}</div>
+                   <div className="mb-1 font-bold text-gray-400 dark:text-slate-500">Item {i + 1}</div>
                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <input className="p-1 border rounded" placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
-                      <input className="p-1 border rounded" type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
+                      <input className="p-1 border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
+                      <input className="p-1 border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
                    </div>
-                   <TextArea className="w-full p-1 border rounded mb-2 font-sans" rows={3} placeholder="Description (can be long)" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
+                   <TextArea className="w-full p-1 border rounded mb-2 font-sans bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" rows={3} placeholder="Description (can be long)" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
                    <div className="flex justify-between items-center">
-                     <input className="w-32 p-1 border rounded" type="number" placeholder="Unit Price" value={item.rate} onChange={e=>updateItem(item.id, 'rate', Number(e.target.value))} />
-                     <span className="font-bold text-blue-600">{formatNumber(item.qty * item.rate)}</span>
+                     <input className="w-32 p-1 border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" type="number" placeholder="Unit Price" value={item.rate} onChange={e=>updateItem(item.id, 'rate', Number(e.target.value))} />
+                     <span className="font-bold text-blue-600 dark:text-blue-400">{formatNumber(item.qty * item.rate)}</span>
                    </div>
                 </div>
               ))}
@@ -521,10 +521,10 @@ export const InvoiceGenerator: React.FC = () => {
          </div>
 
          {/* Stamp Upload */}
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <h3 className="font-bold text-gray-700 mb-2 border-b pb-2">Stamp / Signature</h3>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2 border-b dark:border-slate-700 pb-2">Stamp / Signature</h3>
             <div className="flex items-center gap-2">
-              <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded text-sm flex items-center gap-2 text-gray-600">
+              <label className="cursor-pointer bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 px-3 py-2 rounded text-sm flex items-center gap-2 text-gray-600 dark:text-slate-300">
                  <Upload className="w-4 h-4"/> Upload Image
                  <input type="file" accept="image/*" className="hidden" onChange={handleStampUpload} />
               </label>
@@ -535,7 +535,7 @@ export const InvoiceGenerator: React.FC = () => {
       </div>
 
       {/* --- Live Preview (Right - Fixed Format) --- */}
-      <div className="xl:col-span-3 bg-gray-500 p-4 lg:p-8 rounded-xl overflow-x-auto flex justify-center items-start">
+      <div className="xl:col-span-3 bg-gray-500 dark:bg-slate-950 p-4 lg:p-8 rounded-xl overflow-x-auto flex justify-center items-start">
          <div className="bg-white shadow-2xl min-h-[800px] w-[210mm] p-[10mm] relative text-gray-900 leading-tight">
             
             {/* Header Right */}
@@ -804,61 +804,61 @@ export const DeliveryChallanGenerator: React.FC = () => {
     <div className="grid xl:grid-cols-5 gap-8">
       {/* Controls */}
       <div className="xl:col-span-2 space-y-6 max-h-[calc(100vh-100px)] overflow-y-auto pr-2 custom-scrollbar">
-         <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-wrap gap-2 sticky top-0 z-20">
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm flex flex-wrap gap-2 sticky top-0 z-20">
              <Button onClick={downloadPdf} className="flex-1 bg-red-600 hover:bg-red-700 text-xs"><Download className="w-4 h-4 mr-1" /> PDF</Button>
              <Button onClick={downloadDocx} className="flex-1 bg-blue-700 hover:bg-blue-800 text-xs"><FileText className="w-4 h-4 mr-1" /> DOCX</Button>
          </div>
          
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-             <h3 className="font-bold text-gray-700 mb-3 border-b pb-2 flex justify-between">Challan Details <Button size="sm" variant="outline" onClick={generateNextNumber}><Hash className="w-3 h-3 mr-1" /> Next</Button></h3>
-             <div className="grid grid-cols-2 gap-3">
-               <div><label className="text-xs text-gray-500">Challan #</label><input className="w-full p-1.5 border rounded text-sm" value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
-               <div><label className="text-xs text-gray-500">Date</label><input type="date" className="w-full p-1.5 border rounded text-sm" value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
-               <div><label className="text-xs text-gray-500">Vehicle #</label><input className="w-full p-1.5 border rounded text-sm" value={header.vehicleNumber} onChange={e=>setHeader({...header, vehicleNumber: e.target.value})} /></div>
-               <div><label className="text-xs text-gray-500">Ref / PO #</label><input className="w-full p-1.5 border rounded text-sm" value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+             <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-3 border-b dark:border-slate-700 pb-2 flex justify-between">Challan Details <Button size="sm" variant="outline" onClick={generateNextNumber}><Hash className="w-3 h-3 mr-1" /> Next</Button></h3>
+             <div className="grid grid-cols-2 gap-3 text-gray-500 dark:text-slate-400">
+               <div><label className="text-xs">Challan #</label><input className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
+               <div><label className="text-xs">Date</label><input type="date" className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
+               <div><label className="text-xs">Vehicle #</label><input className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.vehicleNumber} onChange={e=>setHeader({...header, vehicleNumber: e.target.value})} /></div>
+               <div><label className="text-xs">Ref / PO #</label><input className="w-full p-1.5 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
              </div>
          </div>
 
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <h3 className="font-bold text-gray-700 mb-2 border-b pb-2">Sender</h3>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2 border-b dark:border-slate-700 pb-2">Sender</h3>
             <div className="space-y-2">
-               <input className="w-full p-1 border rounded text-sm font-bold" value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} placeholder="Company"/>
-               <input className="w-full p-1 border rounded text-sm" value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} placeholder="Address"/>
-               <input className="w-full p-1 border rounded text-sm" value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} placeholder="Phone"/>
+               <input className="w-full p-1 border rounded text-sm font-bold bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} placeholder="Company"/>
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} placeholder="Address"/>
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} placeholder="Phone"/>
             </div>
          </div>
 
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <h3 className="font-bold text-gray-700 mb-2 border-b pb-2">Recipient</h3>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+            <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2 border-b dark:border-slate-700 pb-2">Recipient</h3>
             <div className="space-y-2">
-               <input className="w-full p-1 border rounded text-sm font-bold" value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} placeholder="Company"/>
-               <input className="w-full p-1 border rounded text-sm" value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} placeholder="Address"/>
-               <input className="w-full p-1 border rounded text-sm" value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} placeholder="Contact"/>
+               <input className="w-full p-1 border rounded text-sm font-bold bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} placeholder="Company"/>
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} placeholder="Address"/>
+               <input className="w-full p-1 border rounded text-sm bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} placeholder="Contact"/>
             </div>
          </div>
 
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-             <h3 className="font-bold text-gray-700 mb-2 border-b pb-2">Items</h3>
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+             <h3 className="font-bold text-gray-700 dark:text-slate-200 mb-2 border-b dark:border-slate-700 pb-2">Items</h3>
              <div className="space-y-3">
                {items.map((item, i) => (
-                  <div key={item.id} className="p-3 bg-gray-50 rounded border text-sm relative">
+                  <div key={item.id} className="p-3 bg-gray-50 dark:bg-slate-900 rounded border dark:border-slate-700 text-sm relative">
                      <button onClick={() => removeItem(item.id)} className="absolute top-2 right-2 text-red-500"><Trash2 className="w-4 h-4"/></button>
-                     <div className="font-bold text-gray-400 mb-1">Item {i+1}</div>
+                     <div className="font-bold text-gray-400 dark:text-slate-500 mb-1">Item {i+1}</div>
                      <div className="grid grid-cols-3 gap-2 mb-2">
-                        <input className="p-1 border rounded" placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
-                        <input className="p-1 border rounded" placeholder="Unit" value={item.unit} onChange={e=>updateItem(item.id, 'unit', e.target.value)} />
-                        <input className="p-1 border rounded" type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
+                        <input className="p-1 border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
+                        <input className="p-1 border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" placeholder="Unit" value={item.unit} onChange={e=>updateItem(item.id, 'unit', e.target.value)} />
+                        <input className="p-1 border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
                      </div>
-                     <TextArea className="w-full p-1 border rounded mb-2" rows={2} placeholder="Description" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
-                     <input className="w-full p-1 border rounded" placeholder="Remarks" value={item.remarks} onChange={e=>updateItem(item.id, 'remarks', e.target.value)} />
+                     <TextArea className="w-full p-1 border rounded mb-2 bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" rows={2} placeholder="Description" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
+                     <input className="w-full p-1 border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white" placeholder="Remarks" value={item.remarks} onChange={e=>updateItem(item.id, 'remarks', e.target.value)} />
                   </div>
                ))}
                <Button size="sm" variant="outline" className="w-full" onClick={addItem}>+ Add Item</Button>
              </div>
          </div>
 
-         <div className="bg-white p-4 rounded-xl border shadow-sm">
-             <label className="flex items-center gap-2 cursor-pointer">
+         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
+             <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-slate-300">
                 <Upload className="w-4 h-4"/> Upload Stamp/Signature
                 <input type="file" accept="image/*" className="hidden" onChange={handleStampUpload} />
              </label>
@@ -867,7 +867,7 @@ export const DeliveryChallanGenerator: React.FC = () => {
       </div>
 
       {/* Preview */}
-      <div className="xl:col-span-3 bg-gray-500 p-8 rounded-xl overflow-x-auto flex justify-center items-start">
+      <div className="xl:col-span-3 bg-gray-500 dark:bg-slate-950 p-8 rounded-xl overflow-x-auto flex justify-center items-start">
          <div className="bg-white shadow-2xl min-h-[800px] w-[210mm] p-[10mm] relative text-gray-900">
              <div className="text-right mb-8">
                 <h1 className="text-3xl font-bold text-blue-600 uppercase mb-2">{header.title}</h1>

@@ -17,9 +17,9 @@ export const WordCounter: React.FC = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Object.entries(stats).map(([key, val]) => (
-          <div key={key} className="bg-blue-50 p-4 rounded-xl text-center">
-            <div className="text-2xl font-bold text-blue-600">{val}</div>
-            <div className="text-xs font-semibold text-blue-400 uppercase tracking-wide">{key}</div>
+          <div key={key} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl text-center">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{val}</div>
+            <div className="text-xs font-semibold text-blue-400 dark:text-blue-500 uppercase tracking-wide">{key}</div>
           </div>
         ))}
       </div>
@@ -66,7 +66,7 @@ export const CaseConverter: React.FC = () => {
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg text-sm text-gray-500">
+      <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-900 p-3 rounded-lg text-sm text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700">
         <span>{text.length} characters</span>
         <Button size="sm" onClick={() => navigator.clipboard.writeText(text)}><Copy className="w-4 h-4" /></Button>
       </div>
@@ -86,15 +86,15 @@ export const LoremGenerator: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-200">
-        <label className="font-medium text-gray-700">Paragraphs:</label>
+      <div className="flex items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+        <label className="font-medium text-gray-700 dark:text-slate-200">Paragraphs:</label>
         <input 
           type="number" 
           min="1" 
           max="50" 
           value={paragraphs} 
           onChange={(e) => setParagraphs(Number(e.target.value))}
-          className="w-20 p-2 border rounded-md"
+          className="w-20 p-2 border rounded-md bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white"
         />
         <Button onClick={generate}><Wand2 className="w-4 h-4 mr-2 inline" /> Generate</Button>
       </div>
@@ -148,7 +148,7 @@ export const DuplicateRemover: React.FC = () => {
   return (
     <div className="space-y-4">
       <Button onClick={process}><FileMinus className="w-4 h-4 mr-2 inline" /> Remove Duplicates</Button>
-      {stats.removed > 0 && <span className="text-green-600 text-sm ml-4">Removed {stats.removed} duplicates!</span>}
+      {stats.removed > 0 && <span className="text-green-600 dark:text-green-400 text-sm ml-4">Removed {stats.removed} duplicates!</span>}
       <TextArea rows={12} value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste your list here..." />
     </div>
   );
@@ -221,7 +221,14 @@ export const TextRepeater: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex gap-4">
-        <input type="number" min="1" max="1000" value={count} onChange={(e) => setCount(Number(e.target.value))} className="w-24 p-2 border rounded" />
+        <input 
+          type="number" 
+          min="1" 
+          max="1000" 
+          value={count} 
+          onChange={(e) => setCount(Number(e.target.value))} 
+          className="w-24 p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" 
+        />
         <Button onClick={process}><Repeat className="w-4 h-4 mr-2 inline" /> Repeat</Button>
       </div>
       <TextArea rows={3} placeholder="Text to repeat..." value={text} onChange={(e) => setText(e.target.value)} />
@@ -237,7 +244,7 @@ export const TextReverser: React.FC = () => {
   return (
      <div className="space-y-4">
        <TextArea rows={5} placeholder="Type text here..." value={text} onChange={(e) => setText(e.target.value)} />
-       <div className="flex justify-center"><ArrowRightLeft className="text-gray-400" /></div>
+       <div className="flex justify-center"><ArrowRightLeft className="text-gray-400 dark:text-slate-600" /></div>
        <TextArea rows={5} readOnly placeholder="Reversed text..." value={text.split('').reverse().join('')} />
      </div>
   );
@@ -255,7 +262,7 @@ export const MorseConverter: React.FC = () => {
   return (
     <div className="space-y-4">
       <TextArea rows={6} placeholder="Type text to convert to Morse Code..." value={text} onChange={(e) => setText(e.target.value)} />
-      <div className="bg-gray-800 text-green-400 p-6 rounded-xl font-mono text-lg break-words">
+      <div className="bg-gray-800 dark:bg-black text-green-400 p-6 rounded-xl font-mono text-lg break-words border border-gray-700 dark:border-slate-800">
         {text ? encode(text) : '... --- ...'}
       </div>
     </div>

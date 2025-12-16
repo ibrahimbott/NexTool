@@ -42,7 +42,7 @@ export const PdfMerge: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50">
+      <div className="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-8 text-center bg-gray-50 dark:bg-slate-800">
         <input 
           type="file" 
           accept="application/pdf" 
@@ -52,18 +52,18 @@ export const PdfMerge: React.FC = () => {
           id="pdf-merge-upload" 
         />
         <label htmlFor="pdf-merge-upload" className="cursor-pointer flex flex-col items-center">
-          <Upload className="w-12 h-12 text-gray-400 mb-4" />
-          <span className="text-lg font-medium text-gray-700">Select Multiple PDF Files</span>
-          <span className="text-sm text-gray-500 mt-2">Hold Ctrl/Cmd to select multiple files</span>
+          <Upload className="w-12 h-12 text-gray-400 dark:text-slate-500 mb-4" />
+          <span className="text-lg font-medium text-gray-700 dark:text-slate-200">Select Multiple PDF Files</span>
+          <span className="text-sm text-gray-500 dark:text-slate-400 mt-2">Hold Ctrl/Cmd to select multiple files</span>
         </label>
       </div>
 
       {files.length > 0 && (
-        <div className="bg-white p-4 rounded-xl border">
-          <h4 className="font-bold mb-3">Selected Files ({files.length})</h4>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700">
+          <h4 className="font-bold mb-3 text-gray-800 dark:text-slate-200">Selected Files ({files.length})</h4>
           <ul className="space-y-2 mb-4">
             {files.map((f, i) => (
-              <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+              <li key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
                 <FileText className="w-4 h-4 text-red-500" /> {f.name}
               </li>
             ))}
@@ -115,15 +115,15 @@ export const PdfRotate: React.FC = () => {
           type="file" 
           accept="application/pdf" 
           onChange={(e) => setFile(e.target.files?.[0] || null)} 
-          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 dark:text-slate-400"
         />
         
         {file && (
-          <div className="flex gap-4 items-center bg-gray-50 p-4 rounded-lg">
+          <div className="flex gap-4 items-center bg-gray-50 dark:bg-slate-800 p-4 rounded-lg border dark:border-slate-700">
              <select 
                value={rotation} 
                onChange={(e) => setRotation(Number(e.target.value))}
-               className="p-2 rounded border"
+               className="p-2 rounded border bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white"
              >
                <option value={90}>Rotate 90° CW</option>
                <option value={180}>Rotate 180°</option>
@@ -174,17 +174,17 @@ export const PdfSplit: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <input type="file" accept="application/pdf" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+      <input type="file" accept="application/pdf" onChange={handleFile} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-slate-200 dark:text-slate-400"/>
       
       {file && (
         <div>
-           <h4 className="font-bold mb-4">Found {pageCount} pages. Click to download individually:</h4>
+           <h4 className="font-bold mb-4 text-gray-800 dark:text-slate-200">Found {pageCount} pages. Click to download individually:</h4>
            <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
              {Array.from({length: pageCount}).map((_, i) => (
                 <button 
                   key={i} 
                   onClick={() => extractPage(i)}
-                  className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 text-sm font-bold"
+                  className="p-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800 text-sm font-bold"
                 >
                   Page {i + 1}
                 </button>

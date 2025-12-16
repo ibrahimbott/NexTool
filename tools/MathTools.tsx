@@ -32,21 +32,21 @@ export const AgeCalculator: React.FC = () => {
   return (
     <div className="space-y-6 max-w-md mx-auto">
       <div className="space-y-2">
-        <label className="font-medium text-gray-700">Date of Birth</label>
+        <label className="font-medium text-gray-700 dark:text-slate-300">Date of Birth</label>
         <input 
           type="date" 
           value={birthDate} 
           onChange={(e) => setBirthDate(e.target.value)} 
-          className="w-full p-3 border rounded-lg"
+          className="w-full p-3 border rounded-lg bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white"
         />
         <Button onClick={calculate} className="w-full"><Calendar className="w-4 h-4 mr-2 inline" /> Calculate Age</Button>
       </div>
       
       {age && (
-        <div className="bg-blue-50 p-6 rounded-xl text-center border border-blue-100">
-          <div className="text-4xl font-bold text-blue-600 mb-2">{age.years}</div>
-          <div className="text-gray-500 uppercase text-xs font-bold tracking-wider mb-4">Years Old</div>
-          <div className="flex justify-center gap-4 text-sm text-gray-600">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl text-center border border-blue-100 dark:border-blue-800">
+          <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">{age.years}</div>
+          <div className="text-gray-500 dark:text-slate-400 uppercase text-xs font-bold tracking-wider mb-4">Years Old</div>
+          <div className="flex justify-center gap-4 text-sm text-gray-600 dark:text-slate-300">
              <span>{age.months} Months</span>
              <span>|</span>
              <span>{age.days} Days</span>
@@ -70,15 +70,15 @@ export const BmiCalculator: React.FC = () => {
   };
 
   const getCategory = (v: number) => {
-    if (v < 18.5) return { label: 'Underweight', color: 'text-yellow-600' };
-    if (v < 25) return { label: 'Normal weight', color: 'text-green-600' };
-    if (v < 30) return { label: 'Overweight', color: 'text-orange-600' };
-    return { label: 'Obese', color: 'text-red-600' };
+    if (v < 18.5) return { label: 'Underweight', color: 'text-yellow-600 dark:text-yellow-400' };
+    if (v < 25) return { label: 'Normal weight', color: 'text-green-600 dark:text-green-400' };
+    if (v < 30) return { label: 'Overweight', color: 'text-orange-600 dark:text-orange-400' };
+    return { label: 'Obese', color: 'text-red-600 dark:text-red-400' };
   };
 
   return (
     <div className="grid md:grid-cols-2 gap-8">
-      <div className="space-y-4">
+      <div className="space-y-4 text-gray-700 dark:text-slate-300">
         <div>
           <label className="block text-sm font-medium mb-1">Weight (kg): {weight}</label>
           <input type="range" min="30" max="200" value={weight} onChange={(e) => setWeight(Number(e.target.value))} className="w-full" />
@@ -93,11 +93,11 @@ export const BmiCalculator: React.FC = () => {
       <div className="flex items-center justify-center">
         {bmi ? (
           <div className="text-center">
-             <div className="text-6xl font-bold text-gray-800 mb-2">{bmi}</div>
+             <div className="text-6xl font-bold text-gray-800 dark:text-slate-100 mb-2">{bmi}</div>
              <div className={`text-xl font-bold ${getCategory(bmi).color}`}>{getCategory(bmi).label}</div>
           </div>
         ) : (
-          <div className="text-gray-400 text-sm">Enter details to see result</div>
+          <div className="text-gray-400 dark:text-slate-500 text-sm">Enter details to see result</div>
         )}
       </div>
     </div>
@@ -111,21 +111,21 @@ export const PercentageCalculator: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-4 rounded-lg border flex flex-col md:flex-row items-center gap-4">
-        <span className="font-bold text-gray-500">What is</span>
-        <input type="number" className="w-20 p-2 border rounded" onChange={(e) => setVal1(Number(e.target.value))} />
-        <span className="font-bold text-gray-500">% of</span>
-        <input type="number" className="w-20 p-2 border rounded" onChange={(e) => setVal2(Number(e.target.value))} />
-        <div className="ml-auto font-bold text-xl text-blue-600">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border dark:border-slate-700 flex flex-col md:flex-row items-center gap-4 text-gray-700 dark:text-slate-300">
+        <span className="font-bold text-gray-500 dark:text-slate-400">What is</span>
+        <input type="number" className="w-20 p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" onChange={(e) => setVal1(Number(e.target.value))} />
+        <span className="font-bold text-gray-500 dark:text-slate-400">% of</span>
+        <input type="number" className="w-20 p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" onChange={(e) => setVal2(Number(e.target.value))} />
+        <div className="ml-auto font-bold text-xl text-blue-600 dark:text-blue-400">
            = {((val1 / 100) * val2).toFixed(2)}
         </div>
       </div>
       
-      <div className="bg-white p-4 rounded-lg border flex flex-col md:flex-row items-center gap-4">
-        <input type="number" className="w-20 p-2 border rounded" onChange={(e) => setVal1(Number(e.target.value))} />
-        <span className="font-bold text-gray-500">is what % of</span>
-        <input type="number" className="w-20 p-2 border rounded" onChange={(e) => setVal2(Number(e.target.value))} />
-        <div className="ml-auto font-bold text-xl text-blue-600">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border dark:border-slate-700 flex flex-col md:flex-row items-center gap-4 text-gray-700 dark:text-slate-300">
+        <input type="number" className="w-20 p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" onChange={(e) => setVal1(Number(e.target.value))} />
+        <span className="font-bold text-gray-500 dark:text-slate-400">is what % of</span>
+        <input type="number" className="w-20 p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" onChange={(e) => setVal2(Number(e.target.value))} />
+        <div className="ml-auto font-bold text-xl text-blue-600 dark:text-blue-400">
            = {(val2 === 0 ? 0 : (val1 / val2) * 100).toFixed(2)}%
         </div>
       </div>
@@ -143,24 +143,24 @@ export const DiscountCalculator: React.FC = () => {
 
   return (
     <div className="grid md:grid-cols-2 gap-8 items-center">
-       <div className="space-y-4">
+       <div className="space-y-4 text-gray-700 dark:text-slate-300">
          <div>
             <label className="block text-sm font-medium mb-1">Original Price</label>
             <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="w-full pl-8 p-2 border rounded" />
+              <span className="absolute left-3 top-2 text-gray-500 dark:text-slate-400">$</span>
+              <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="w-full pl-8 p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
             </div>
          </div>
          <div>
             <label className="block text-sm font-medium mb-1">Discount (%)</label>
-            <input type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="w-full p-2 border rounded" />
+            <input type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
          </div>
        </div>
 
-       <div className="bg-green-50 p-6 rounded-xl border border-green-200 text-center space-y-2">
-          <div className="text-sm text-green-700 font-bold uppercase">Final Price</div>
-          <div className="text-4xl font-bold text-green-700">${final.toFixed(2)}</div>
-          <div className="text-sm text-green-600">You save ${saved.toFixed(2)}</div>
+       <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-xl border border-green-200 dark:border-green-800 text-center space-y-2">
+          <div className="text-sm text-green-700 dark:text-green-400 font-bold uppercase">Final Price</div>
+          <div className="text-4xl font-bold text-green-700 dark:text-green-400">${final.toFixed(2)}</div>
+          <div className="text-sm text-green-600 dark:text-green-500">You save ${saved.toFixed(2)}</div>
        </div>
     </div>
   );

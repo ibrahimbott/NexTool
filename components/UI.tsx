@@ -3,7 +3,7 @@ import { Star } from 'lucide-react';
 
 // Ad Placeholder
 export const AdPlaceholder: React.FC<{ className?: string, label?: string }> = ({ className = "h-32", label = "Advertisement Space" }) => (
-  <div className={`bg-gray-100 dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-lg flex items-center justify-center text-gray-400 dark:text-slate-500 text-sm font-medium ${className}`}>
+  <div className={`bg-gray-100 dark:bg-slate-800/50 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-lg flex items-center justify-center text-gray-400 dark:text-slate-500 text-sm font-medium ${className}`}>
     {label}
   </div>
 );
@@ -75,7 +75,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 // Text Area
 export const TextArea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = (props) => (
   <textarea 
-    className="w-full p-4 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-mono text-sm bg-gray-50 dark:bg-slate-900 dark:text-slate-200"
+    className="w-full p-4 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-mono text-sm bg-gray-50 dark:bg-slate-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500"
     {...props}
   />
 );
