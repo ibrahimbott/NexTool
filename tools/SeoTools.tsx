@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, TextArea } from '../components/UI';
-import { Copy, FileText } from 'lucide-react';
+import { Copy, FileText, Globe, Link } from 'lucide-react';
 
 export const UrlEncoder: React.FC = () => {
   const [input, setInput] = useState('');
@@ -161,5 +161,95 @@ export const RobotsTxtGen: React.FC = () => {
           <button onClick={() => navigator.clipboard.writeText(result)} className="absolute top-2 right-2 p-2 bg-gray-700 rounded hover:bg-gray-600"><Copy className="w-4 h-4" /></button>
        </div>
     </div>
+  );
+};
+
+// --- Sitemap Generator ---
+export const SitemapGenerator: React.FC = () => {
+  const [urls, setUrls] = useState('https://example.com/\nhttps://example.com/about\nhttps://example.com/contact');
+  const [freq, setFreq] = useState('monthly');
+  const [priority, setPriority] = useState('0.8');
+  const [result, setResult] = useState('');
+
+  const generate = () => {
+    const lines = urls.split('\n').filter(u => u.trim());
+    const date = new Date().toISOString().split('T')[0];
+    
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    
+    lines.forEach(url => {
+       xml += `  <url>\n    <loc>${url.trim()}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${priority}</priority>\n  </url>\n`;
+    });
+    
+    xml += '</urlset>';
+    setResult(xml);
+  };
+
+  return (
+    <div className="space-y-6">
+       <div className="grid md:grid-cols-3 gap-4">
+          <div className="md:col-span-3">
+             <label className="block text-sm font-bold mb-1 text-gray-700 dark:text-slate-300">URLs (One per line)</label>
+             <TextArea rows={5} value={urls} onChange={e => setUrls(e.target.value)} placeholder="https://..." />
+          </div>
+          <div>
+             <label className="block text-sm font-bold mb-1 text-gray-700 dark:text-slate-300">Change Frequency</label>
+             <select value={freq} onChange={e => setFreq(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white">
+                <option value="always">always</option>
+                <option value="hourly">hourly</option>
+                <option value="daily">daily</option>
+                <option value="weekly">weekly</option>
+                <option value="monthly">monthly</option>
+                <option value="yearly">yearly</option>
+                <option value="never">never</option>
+             </select>
+          </div>
+          <div>
+             <label className="block text-sm font-bold mb-1 text-gray-700 dark:text-slate-300">Priority (0.0 - 1.0)</label>
+             <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white">
+                <option value="1.0">1.0</option>
+                <option value="0.9">0.9</option>
+                <option value="0.8">0.8</option>
+                <option value="0.7">0.7</option>
+                <option value="0.6">0.6</option>
+                <option value="0.5">0.5</option>
+             </select>
+          </div>
+          <div className="flex items-end">
+             <Button onClick={generate} className="w-full">Generate XML</Button>
+          </div>
+       </div>
+       {result && (
+          <div className="bg-gray-800 p-4 rounded-xl text-white relative border dark:border-slate-700">
+             <pre className="text-sm font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">{result}</pre>
+             <button onClick={() => navigator.clipboard.writeText(result)} className="absolute top-2 right-2 p-2 bg-gray-700 rounded hover:bg-gray-600"><Copy className="w-4 h-4" /></button>
+          </div>
+       )}
+    </div>
+  );
+};
+
+// --- Slug Generator ---
+export const SlugGenerator: React.FC = () => {
+  const [text, setText] = useState('');
+  
+  const slug = text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return (
+     <div className="space-y-6">
+        <div className="space-y-2">
+           <label className="block text-sm font-bold text-gray-700 dark:text-slate-300">Input Text</label>
+           <input className="w-full p-3 border rounded-lg bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={text} onChange={e => setText(e.target.value)} placeholder="Hello World! This is a Title." />
+        </div>
+        <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-xl border border-green-200 dark:border-green-800 flex items-center justify-between">
+           <span className="font-mono text-lg text-green-700 dark:text-green-400 break-all">{slug || 'result-will-appear-here'}</span>
+           <Button size="sm" onClick={() => navigator.clipboard.writeText(slug)}><Copy className="w-4 h-4" /></Button>
+        </div>
+     </div>
   );
 };

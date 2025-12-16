@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, TextArea } from '../components/UI';
-import { Palette, Play, Pause, RotateCcw, Copy } from 'lucide-react';
+import { Palette, Play, Pause, RotateCcw, Copy, Globe, RefreshCw } from 'lucide-react';
 
 // --- CSS Minifier ---
 export const CssMinifier: React.FC = () => {
@@ -152,6 +152,107 @@ export const Stopwatch: React.FC = () => {
            <RotateCcw className="w-4 h-4 mr-2 inline" /> Reset
          </Button>
        </div>
+    </div>
+  );
+};
+
+// --- Gradient Generator ---
+export const GradientGenerator: React.FC = () => {
+   const [color1, setColor1] = useState('#2563eb');
+   const [color2, setColor2] = useState('#9333ea');
+   const [angle, setAngle] = useState(45);
+   const [type, setType] = useState('linear');
+   
+   const css = `background: ${type}-gradient(${type === 'linear' ? angle + 'deg' : 'circle'}, ${color1}, ${color2});`;
+
+   return (
+      <div className="space-y-6">
+         <div 
+           className="w-full h-48 rounded-2xl shadow-lg border dark:border-slate-700 transition-all" 
+           style={{ background: `${type}-gradient(${type === 'linear' ? angle + 'deg' : 'circle'}, ${color1}, ${color2})` }} 
+         />
+         
+         <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4 bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700">
+               <div>
+                  <label className="block text-sm font-bold mb-1 text-gray-700 dark:text-slate-300">Colors</label>
+                  <div className="flex gap-2">
+                     <input type="color" value={color1} onChange={e => setColor1(e.target.value)} className="h-10 w-full cursor-pointer rounded border-0" />
+                     <input type="color" value={color2} onChange={e => setColor2(e.target.value)} className="h-10 w-full cursor-pointer rounded border-0" />
+                  </div>
+               </div>
+               <div>
+                  <label className="block text-sm font-bold mb-1 text-gray-700 dark:text-slate-300">Type</label>
+                  <div className="flex gap-2">
+                     <Button size="sm" variant={type === 'linear' ? 'primary' : 'outline'} onClick={() => setType('linear')}>Linear</Button>
+                     <Button size="sm" variant={type === 'radial' ? 'primary' : 'outline'} onClick={() => setType('radial')}>Radial</Button>
+                  </div>
+               </div>
+               {type === 'linear' && (
+                 <div>
+                    <label className="block text-sm font-bold mb-1 text-gray-700 dark:text-slate-300">Angle: {angle}°</label>
+                    <input type="range" min="0" max="360" value={angle} onChange={e => setAngle(Number(e.target.value))} className="w-full" />
+                 </div>
+               )}
+            </div>
+            
+            <div className="bg-gray-800 p-4 rounded-xl text-white relative flex items-center border dark:border-slate-700">
+               <code className="text-sm break-all">{css}</code>
+               <button onClick={() => navigator.clipboard.writeText(css)} className="absolute top-2 right-2 p-2 bg-gray-700 rounded hover:bg-gray-600"><Copy className="w-4 h-4" /></button>
+            </div>
+         </div>
+      </div>
+   );
+};
+
+// --- IP Lookup ---
+export const IpLookup: React.FC = () => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchIp = async () => {
+     setLoading(true);
+     try {
+       // Using ipapi.co (free tier, usually reliable for client-side)
+       const res = await fetch('https://ipapi.co/json/');
+       const json = await res.json();
+       setData(json);
+     } catch (e) {
+       setData({ error: "Failed to fetch IP data. Adblocker might be blocking the request." });
+     } finally {
+       setLoading(false);
+     }
+  };
+
+  useEffect(() => { fetchIp(); }, []);
+
+  return (
+    <div className="space-y-6">
+       <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800 text-center">
+          <div className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase mb-2">Your Public IP Address</div>
+          <div className="text-4xl font-mono font-bold text-blue-600 dark:text-blue-400">
+             {loading ? 'Loading...' : (data?.ip || 'Unknown')}
+          </div>
+          <Button size="sm" onClick={fetchIp} variant="outline" className="mt-4"><RefreshCw className="w-4 h-4 mr-2 inline" /> Refresh</Button>
+       </div>
+       
+       {data && !data.error && (
+          <div className="grid md:grid-cols-2 gap-4">
+             {[
+               { l: 'Network', v: data.org },
+               { l: 'City', v: data.city },
+               { l: 'Region', v: data.region },
+               { l: 'Country', v: data.country_name },
+               { l: 'Timezone', v: data.timezone },
+               { l: 'Latitude/Longitude', v: `${data.latitude}, ${data.longitude}` },
+             ].map(item => (
+                <div key={item.l} className="p-3 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 flex justify-between">
+                   <span className="text-gray-500 dark:text-slate-400 font-medium">{item.l}</span>
+                   <span className="font-bold text-gray-800 dark:text-slate-200">{item.v}</span>
+                </div>
+             ))}
+          </div>
+       )}
     </div>
   );
 };

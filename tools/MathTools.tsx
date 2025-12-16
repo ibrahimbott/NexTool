@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../components/UI';
-import { Calculator, Calendar, Percent, Tag } from 'lucide-react';
+import { Calculator, Calendar, Percent, Tag, DollarSign } from 'lucide-react';
 
 // --- Age Calculator ---
 export const AgeCalculator: React.FC = () => {
@@ -164,4 +164,57 @@ export const DiscountCalculator: React.FC = () => {
        </div>
     </div>
   );
+};
+
+// --- Loan Calculator ---
+export const LoanCalculator: React.FC = () => {
+   const [amount, setAmount] = useState(100000);
+   const [rate, setRate] = useState(5);
+   const [term, setTerm] = useState(10); // years
+
+   const calculate = () => {
+      const r = rate / 100 / 12;
+      const n = term * 12;
+      return (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+   };
+
+   const monthly = calculate();
+   const total = monthly * term * 12;
+   const interest = total - amount;
+
+   return (
+      <div className="grid md:grid-cols-2 gap-8">
+         <div className="space-y-4 text-gray-700 dark:text-slate-300">
+            <div>
+               <label className="block text-sm font-medium mb-1">Loan Amount</label>
+               <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
+            </div>
+            <div>
+               <label className="block text-sm font-medium mb-1">Interest Rate (%)</label>
+               <input type="number" value={rate} onChange={e => setRate(Number(e.target.value))} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" step="0.1" />
+            </div>
+            <div>
+               <label className="block text-sm font-medium mb-1">Term (Years)</label>
+               <input type="number" value={term} onChange={e => setTerm(Number(e.target.value))} className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
+            </div>
+         </div>
+         
+         <div className="space-y-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-center">
+               <div className="text-sm font-bold text-blue-500 uppercase">Monthly Payment</div>
+               <div className="text-3xl font-bold text-blue-700 dark:text-blue-400">${monthly.toFixed(2)}</div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+               <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700 text-center">
+                  <div className="text-xs font-bold text-gray-500">Total Interest</div>
+                  <div className="text-lg font-bold text-red-500 dark:text-red-400">${interest.toFixed(0)}</div>
+               </div>
+               <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700 text-center">
+                  <div className="text-xs font-bold text-gray-500">Total Payback</div>
+                  <div className="text-lg font-bold text-gray-700 dark:text-slate-200">${total.toFixed(0)}</div>
+               </div>
+            </div>
+         </div>
+      </div>
+   );
 };

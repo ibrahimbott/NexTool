@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, TextArea } from '../components/UI';
-import { Copy, Trash2, Wand2, ListOrdered, FileMinus, ArrowRightLeft, Repeat } from 'lucide-react';
+import { Copy, Trash2, Wand2, ListOrdered, FileMinus, ArrowRightLeft, Repeat, BarChart3, Type } from 'lucide-react';
 
 // --- Word Counter ---
 export const WordCounter: React.FC = () => {
@@ -267,4 +267,94 @@ export const MorseConverter: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// --- ASCII Art Generator ---
+export const AsciiArtGenerator: React.FC = () => {
+  const [text, setText] = useState('HELLO');
+  
+  // Very basic dictionary for A-Z
+  const font: Record<string, string[]> = {
+    'A': ['  A  ', ' A A ', 'AAAAA', 'A   A', 'A   A'],
+    'B': ['BBBB ', 'B   B', 'BBBB ', 'B   B', 'BBBB '],
+    'C': [' CCC ', 'C    ', 'C    ', 'C    ', ' CCC '],
+    'D': ['DDDD ', 'D   D', 'D   D', 'D   D', 'DDDD '],
+    'E': ['EEEEE', 'E    ', 'EEE  ', 'E    ', 'EEEEE'],
+    'F': ['FFFFF', 'F    ', 'FFF  ', 'F    ', 'F    '],
+    'G': [' GGG ', 'G    ', 'G  GG', 'G   G', ' GGG '],
+    'H': ['H   H', 'H   H', 'HHHHH', 'H   H', 'H   H'],
+    'I': ['IIIII', '  I  ', '  I  ', '  I  ', 'IIIII'],
+    'J': ['JJJJJ', '    J', '    J', 'J   J', ' JJJ '],
+    'K': ['K   K', 'K  K ', 'KKK  ', 'K  K ', 'K   K'],
+    'L': ['L    ', 'L    ', 'L    ', 'L    ', 'LLLLL'],
+    'M': ['M   M', 'MM MM', 'M M M', 'M   M', 'M   M'],
+    'N': ['N   N', 'NN  N', 'N N N', 'N  NN', 'N   N'],
+    'O': [' OOO ', 'O   O', 'O   O', 'O   O', ' OOO '],
+    'P': ['PPPP ', 'P   P', 'PPPP ', 'P    ', 'P    '],
+    'Q': [' QQQ ', 'Q   Q', 'Q   Q', 'Q  Q ', ' QQ Q'],
+    'R': ['RRRR ', 'R   R', 'RRRR ', 'R  R ', 'R   R'],
+    'S': [' SSS ', 'S    ', ' SSS ', '    S', ' SSS '],
+    'T': ['TTTTT', '  T  ', '  T  ', '  T  ', '  T  '],
+    'U': ['U   U', 'U   U', 'U   U', 'U   U', ' UUU '],
+    'V': ['V   V', 'V   V', 'V   V', ' V V ', '  V  '],
+    'W': ['W   W', 'W   W', 'W W W', 'W W W', ' W W '],
+    'X': ['X   X', ' X X ', '  X  ', ' X X ', 'X   X'],
+    'Y': ['Y   Y', ' Y Y ', '  Y  ', '  Y  ', '  Y  '],
+    'Z': ['ZZZZZ', '   Z ', '  Z  ', ' Z   ', 'ZZZZZ'],
+    ' ': ['     ', '     ', '     ', '     ', '     '],
+  };
+
+  const generate = () => {
+    const lines = ['', '', '', '', ''];
+    const chars = text.toUpperCase().split('');
+    chars.forEach(char => {
+       const letter = font[char] || font[' '];
+       letter.forEach((line, i) => lines[i] += line + '  ');
+    });
+    return lines.join('\n');
+  };
+
+  return (
+     <div className="space-y-6">
+       <input className="w-full p-3 border rounded-lg bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white uppercase" placeholder="Enter Text..." value={text} onChange={e => setText(e.target.value)} maxLength={15} />
+       <div className="bg-gray-800 p-6 rounded-xl overflow-x-auto text-white dark:border-slate-700 border">
+          <pre className="font-mono text-xs leading-none">{generate()}</pre>
+       </div>
+       <div className="text-xs text-gray-500 text-center">Supports A-Z letters only. Max 15 chars.</div>
+     </div>
+  );
+};
+
+// --- Word Frequency ---
+export const WordFrequency: React.FC = () => {
+   const [text, setText] = useState('');
+   const [results, setResults] = useState<any[]>([]);
+
+   const analyze = () => {
+      const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+      const total = words.length;
+      const counts: Record<string, number> = {};
+      words.forEach(w => counts[w] = (counts[w] || 0) + 1);
+      
+      const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+      setResults(sorted.map(([w, c]) => ({ word: w, count: c, percent: ((c/total)*100).toFixed(1) })));
+   };
+
+   return (
+     <div className="space-y-6">
+        <TextArea rows={8} placeholder="Enter text to analyze..." value={text} onChange={e => setText(e.target.value)} />
+        <Button onClick={analyze} disabled={!text}>Analyze Frequency</Button>
+        {results.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+             {results.slice(0, 20).map((item, i) => (
+                <div key={i} className="bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 p-3 rounded-lg flex flex-col items-center">
+                   <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{item.word}</div>
+                   <div className="text-sm text-gray-500">{item.count} times</div>
+                   <div className="text-xs text-gray-400">({item.percent}%)</div>
+                </div>
+             ))}
+          </div>
+        )}
+     </div>
+   );
 };

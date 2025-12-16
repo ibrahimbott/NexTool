@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../components/UI';
-import { Upload, Download, Image as ImageIcon, RotateCw, Wand2, Crop, FileText, Pipette, Copy, IdCard } from 'lucide-react';
+import { Upload, Download, Image as ImageIcon, RotateCw, Wand2, Crop, FileText, Pipette, Copy, IdCard, Maximize } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 
 // --- Image Converter & Compressor ---
@@ -475,7 +475,63 @@ export const ImageFlipper: React.FC = () => {
    );
 };
 
-// --- Student Card Generator ---
+// --- Aspect Ratio Calculator ---
+export const AspectRatioCalculator: React.FC = () => {
+   const [w, setW] = useState(1920);
+   const [h, setH] = useState(1080);
+   const [ratioW, setRatioW] = useState(16);
+   const [ratioH, setRatioH] = useState(9);
+   
+   const gcd = (a: number, b: number): number => b ? gcd(b, a % b) : a;
+   
+   const calculateRatio = () => {
+     const divisor = gcd(w, h);
+     setRatioW(w / divisor);
+     setRatioH(h / divisor);
+   };
+   
+   const calculateNewDimension = (type: 'w' | 'h') => {
+      if(type === 'w') setH(Math.round((w * ratioH) / ratioW));
+      else setW(Math.round((h * ratioW) / ratioH));
+   };
+
+   return (
+      <div className="space-y-6">
+         <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4 bg-gray-50 dark:bg-slate-800 p-6 rounded-xl border dark:border-slate-700">
+               <h3 className="font-bold text-gray-700 dark:text-slate-300">Dimensions (px)</h3>
+               <div className="flex gap-4 items-center">
+                  <div className="flex-1">
+                     <label className="text-xs font-bold text-gray-500">Width</label>
+                     <input type="number" className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={w} onChange={e => { setW(Number(e.target.value)); calculateRatio(); }} />
+                  </div>
+                  <div className="flex-1">
+                     <label className="text-xs font-bold text-gray-500">Height</label>
+                     <input type="number" className="w-full p-2 border rounded bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={h} onChange={e => { setH(Number(e.target.value)); calculateRatio(); }} />
+                  </div>
+               </div>
+               <div className="text-center font-bold text-blue-600 dark:text-blue-400">Resulting Ratio: {ratioW}:{ratioH}</div>
+            </div>
+
+            <div className="space-y-4 bg-gray-50 dark:bg-slate-800 p-6 rounded-xl border dark:border-slate-700">
+               <h3 className="font-bold text-gray-700 dark:text-slate-300">Calculator based on Ratio</h3>
+               <div className="flex gap-2 items-center">
+                   <span className="text-sm font-bold w-12 text-gray-500">Ratio</span>
+                   <input type="number" className="w-16 p-1 border rounded text-center bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={ratioW} onChange={e => setRatioW(Number(e.target.value))} />
+                   <span className="font-bold">:</span>
+                   <input type="number" className="w-16 p-1 border rounded text-center bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-white" value={ratioH} onChange={e => setRatioH(Number(e.target.value))} />
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <Button size="sm" variant="outline" onClick={() => calculateNewDimension('w')}>Calc Height from Width</Button>
+                  <Button size="sm" variant="outline" onClick={() => calculateNewDimension('h')}>Calc Width from Height</Button>
+               </div>
+            </div>
+         </div>
+      </div>
+   );
+};
+
+// --- Student Card Generator (Existing code) ---
 export const StudentCardGenerator: React.FC = () => {
   const [details, setDetails] = useState({
     name: 'Alex Johnson',
