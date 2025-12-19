@@ -5,7 +5,7 @@ import {
   Settings, Globe, Shield, Lock, FileJson, 
   Files, Scissors, RefreshCw, QrCode, Link, ListOrdered,
   Calendar, Activity, Tag, Clock, Repeat, ArrowRightLeft, Radio,
-  Shuffle, IdCard, Briefcase, Truck, Database, BarChart3, Maximize
+  Shuffle, IdCard, Briefcase, Truck, Database, BarChart3, Maximize, Banknote
 } from 'lucide-react';
 import * as TextTools from '../tools/TextTools';
 import * as DevTools from '../tools/DevTools';
@@ -32,6 +32,7 @@ export const TOOLS: Tool[] = [
   // --- Business Tools ---
   { id: 'invoice-gen', name: 'Pro Invoice Generator', description: 'Create professional invoices. Export to PDF & Word. Auto-saves details.', category: 'Business', path: '/tool/invoice', icon: Briefcase, component: BusinessTools.InvoiceGenerator, isNew: true, isPopular: true },
   { id: 'delivery-challan-gen', name: 'Delivery Challan Gen', description: 'Generate professional delivery challans. Export to PDF & Word.', category: 'Business', path: '/tool/delivery-challan', icon: Truck, component: BusinessTools.DeliveryChallanGenerator, isNew: true },
+  { id: 'fees-slip-gen', name: 'Fees Slip Generator', description: 'Generate secure, unalterable student fee slips in PDF/Image.', category: 'Business', path: '/tool/fees-slip', icon: Banknote, component: BusinessTools.FeesSlipGenerator, isNew: true },
 
   // --- Developer Tools ---
   { id: 'csv-json', name: 'CSV <-> JSON Converter', description: 'Convert CSV data to JSON and vice-versa.', category: 'Developer', path: '/tool/csv-json', icon: Database, component: DataTools.CsvJsonConverter, isNew: true },

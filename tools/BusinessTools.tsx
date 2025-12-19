@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, TextArea, inputClasses } from '../components/UI';
-import { Plus, Trash2, Download, FileText, Save, Upload, RotateCcw, Settings, Hash, DollarSign, FolderOpen, Truck, Eye, Edit3, Image } from 'lucide-react';
+import { Plus, Trash2, Download, FileText, Save, Upload, RotateCcw, Settings, Hash, DollarSign, FolderOpen, Truck, Eye, Edit3, Image as ImageIcon, CreditCard, Banknote } from 'lucide-react';
 import * as docx from 'docx';
 import FileSaver from 'file-saver';
 import jsPDF from 'jspdf';
@@ -853,4 +853,350 @@ export const DeliveryChallanGenerator: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// ==========================================
+// 3. FEES SLIP GENERATOR (SMIT STYLE)
+// ==========================================
+export const FeesSlipGenerator: React.FC = () => {
+   const [data, setData] = useState({
+      name: 'Ibrahim Tayyab',
+      rollNo: '786032',
+      dueDate: '19-12-2025',
+      month: 'December',
+      netPayable: 1000,
+      invoiceAmount: 1035,
+      invoiceId: '100333 0391 2535 1000 05'
+   });
+
+   const [logo, setLogo] = useState<string | null>(null);
+   const [blinqLogo, setBlinqLogo] = useState<string | null>(null);
+   const svgRef = useRef<SVGSVGElement>(null);
+
+   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+         const reader = new FileReader();
+         reader.onload = (ev) => {
+            if (ev.target?.result) setLogo(ev.target.result as string);
+         };
+         reader.readAsDataURL(e.target.files[0]);
+      }
+   };
+
+   const handleBlinqLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+         const reader = new FileReader();
+         reader.onload = (ev) => {
+            if (ev.target?.result) setBlinqLogo(ev.target.result as string);
+         };
+         reader.readAsDataURL(e.target.files[0]);
+      }
+   };
+
+   const download = async (format: 'pdf' | 'png' | 'jpg' | 'svg') => {
+      if (!svgRef.current) return;
+      
+      const svgData = new XMLSerializer().serializeToString(svgRef.current);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      if (format === 'svg') {
+         FileSaver.saveAs(svgBlob, `Fee-Slip-${data.rollNo}.svg`);
+         return;
+      }
+
+      const img = new Image();
+      img.src = url;
+      await new Promise((resolve) => { img.onload = resolve; });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200; // High resolution
+      canvas.height = 800;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // White background for JPG/PDF
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, 1200, 800);
+
+      if (format === 'png') {
+         canvas.toBlob(blob => FileSaver.saveAs(blob!, `Fee-Slip-${data.rollNo}.png`));
+      } else if (format === 'jpg') {
+         canvas.toBlob(blob => FileSaver.saveAs(blob!, `Fee-Slip-${data.rollNo}.jpg`), 'image/jpeg', 0.9);
+      } else if (format === 'pdf') {
+         const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1200, 800] });
+         pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 1200, 800);
+         pdf.save(`Fee-Slip-${data.rollNo}.pdf`);
+      }
+   };
+
+   // Helper to render one side of the slip
+   const renderSlipContent = (type: 'student' | 'bank', xOffset: number) => {
+      const headerColor = "#595959"; 
+      const borderColor = "#000000";
+      const logoBlue = "#2563eb";
+      const logoGreen = "#16a34a";
+      const formatCurrency = (val: number) => val.toLocaleString();
+      
+      const WIDTH = 470; // Total width of the content area
+      const GRID_Y = 140; // Push grid down to make room for logo
+
+      return (
+         <g transform={`translate(${xOffset}, 0)`}>
+            {/* Outer Border for the slip (Optional, helps define "paper" edge) */}
+            <rect x="-10" y="-10" width={WIDTH + 20} height="520" fill="none" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4 4" />
+
+            {/* --- Logo Area --- */}
+            {/* Increased height allowance to 120px and width to 300px for a big logo */}
+            <g transform="translate(0, 10)">
+               {logo ? (
+                  <image 
+                    href={logo} 
+                    x="0" 
+                    y="0" 
+                    width="400" 
+                    height="120" 
+                    preserveAspectRatio="xMinYMid meet" 
+                  />
+               ) : (
+                  // Fallback logo
+                  <g transform="translate(20, 20)">
+                     {/* Fallback SMIT Text Logo Approximation */}
+                     <path d="M10,40 Q10,10 40,10 L45,10" fill="none" stroke={logoBlue} strokeWidth="5" strokeLinecap="round" />
+                     <text x="10" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>S</text>
+                     <text x="45" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>M</text>
+                     <circle cx="95" cy="25" r="5" fill={logoGreen} />
+                     <text x="88" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>I</text>
+                     <text x="110" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>T</text>
+                     <path d="M45,20 L65,10 L85,20 L65,30 Z" fill={logoBlue} />
+                     <path d="M85,20 L85,35 L65,30" fill="none" stroke={logoBlue} strokeWidth="2" />
+                     <text x="10" y="75" fontFamily="Arial" fontSize="10" fontWeight="bold" letterSpacing="1" fill="#000">SAYLANI MASS IT TRAINING</text>
+                  </g>
+               )}
+            </g>
+            
+            {/* Copy Label (Top Right) */}
+            <text x={WIDTH} y="30" textAnchor="end" fontFamily="Arial" fontSize="14" fontWeight="bold" fill="#000">
+               {type === 'student' ? 'Student Copy' : 'Bank Copy'}
+            </text>
+
+            {/* --- Info Grid --- */}
+            <g transform={`translate(0, ${GRID_Y})`}>
+               {/* Column Widths: 110 | 140 | 80 | 140 = 470 total */}
+               
+               {/* Row 1 */}
+               {/* Customer Name Label */}
+               <rect x="0" y="0" width="110" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
+               <text x="5" y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Customer Name :</text>
+               
+               {/* Customer Name Value */}
+               <rect x="110" y="0" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x="115" y="17" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold" clipPath="url(#clip-name)">{data.name}</text>
+
+               {/* Roll No Label */}
+               <rect x="250" y="0" width="80" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
+               <text x="255" y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Roll No.</text>
+               
+               {/* Roll No Value */}
+               <rect x="330" y="0" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x="335" y="17" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold">{data.rollNo}</text>
+
+               {/* Row 2 */}
+               {/* Due Date Label */}
+               <rect x="0" y="25" width="110" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
+               <text x="5" y="42" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Due Date :</text>
+               
+               {/* Due Date Value */}
+               <rect x="110" y="25" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x="115" y="42" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold">{data.dueDate}</text>
+
+               {/* Month Label */}
+               <rect x="250" y="25" width="80" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
+               <text x="255" y="42" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Month :</text>
+               
+               {/* Month Value */}
+               <rect x="330" y="25" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x="335" y="42" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold">{data.month}</text>
+            </g>
+
+            {/* --- Invoice ID Box --- */}
+            <g transform={`translate(0, ${GRID_Y + 60})`}>
+               <rect x="0" y="0" width={WIDTH} height="30" fill="none" stroke={borderColor} strokeWidth="0.5" />
+               <text x={WIDTH / 2} y="20" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
+                  1BILL INVOICE ID: {data.invoiceId}
+               </text>
+            </g>
+
+            {/* --- Payment Options Box --- */}
+            <g transform={`translate(0, ${GRID_Y + 100})`}>
+               <rect x="0" y="0" width={WIDTH} height="120" fill="none" stroke={borderColor} strokeWidth="0.5" />
+               
+               {/* Vertical Divider for Logo */}
+               <line x1="100" y1="0" x2="100" y2="120" stroke={borderColor} strokeWidth="0.5" />
+               {/* Horizontal Divider */}
+               <line x1="100" y1="60" x2={WIDTH} y2="60" stroke={borderColor} strokeWidth="0.5" />
+
+               {/* Blinq Logo */}
+               <g transform="translate(5, 35)">
+                  {blinqLogo ? (
+                     <image href={blinqLogo} x="0" y="0" width="90" height="50" preserveAspectRatio="xMidYMid meet" />
+                  ) : (
+                     <g>
+                        <text x="10" y="30" fontFamily="Arial" fontWeight="900" fontSize="24" fill="black">Blinq</text>
+                        <circle cx="80" cy="18" r="4" fill="#fbbf24" />
+                     </g>
+                  )}
+               </g>
+
+               {/* Cash Section */}
+               <text x="105" y="15" fontSize="10" fontFamily="Arial">
+                  Pay in <tspan fontWeight="bold">Cash</tspan> using 1Bill Invoice ID at any branch of :
+               </text>
+               <g transform="translate(105, 30)" fontSize="9" fontFamily="Arial" fontWeight="bold">
+                  {/* Using slightly tighter spacing to fit width */}
+                  <text x="0" y="0">• Meezan</text>
+                  <text x="80" y="0">• Alfalah</text>
+                  <text x="160" y="0">• Faysal</text>
+                  <text x="230" y="0">• Habib Metro</text>
+                  <text x="310" y="0">• Al Baraka</text>
+
+                  <text x="0" y="15">• Bank Islami</text>
+                  <text x="80" y="15">• Askari</text>
+                  <text x="160" y="15">• DIB</text>
+                  <text x="230" y="15">• TCS</text>
+                  <text x="310" y="15">• Leopards</text>
+               </g>
+
+               {/* Online Section */}
+               <text x="105" y="75" fontSize="10" fontFamily="Arial">
+                  Pay <tspan fontWeight="bold">Online</tspan> using 1Bill Invoice ID via
+               </text>
+               <g transform="translate(105, 95)" fontSize="9" fontFamily="Arial" fontWeight="bold">
+                  <text x="0" y="0">• Internet Banking</text>
+                  <text x="100" y="0">• Mobile Banking</text>
+                  <text x="190" y="0">• EasyPaisa Wallet</text>
+                  <text x="290" y="0">• JazzCash Wallet</text>
+               </g>
+            </g>
+
+            {/* --- Fee Table --- */}
+            <g transform={`translate(0, ${GRID_Y + 230})`}>
+               {/* Head */}
+               <rect x="0" y="0" width={WIDTH - 150} height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
+               <text x="5" y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Fee Head Information</text>
+               
+               <rect x={WIDTH - 150} y="0" width="150" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
+               <text x={WIDTH - 75} y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold" textAnchor="middle">Amount</text>
+
+               {/* Net Payable */}
+               <rect x="0" y="25" width={WIDTH - 150} height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x="5" y="42" fontSize="11" fontFamily="Arial" fontWeight="bold">Net Payable</text>
+               <rect x={WIDTH - 150} y="25" width="150" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x={WIDTH - 75} y="42" fontSize="11" fontFamily="Arial" textAnchor="middle">{formatCurrency(data.netPayable)}</text>
+
+               {/* 1Bill Amount */}
+               <rect x="0" y="50" width={WIDTH - 150} height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x="5" y="67" fontSize="11" fontFamily="Arial" fontWeight="bold">1Bill Invoice Amount</text>
+               <rect x={WIDTH - 150} y="50" width="150" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
+               <text x={WIDTH - 75} y="67" fontSize="11" fontFamily="Arial" textAnchor="middle">{formatCurrency(data.invoiceAmount)}</text>
+            </g>
+
+            {/* --- Instructions --- */}
+            <g transform={`translate(0, ${GRID_Y + 315})`}>
+               <rect x="0" y="0" width={WIDTH} height="50" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
+               <text x="5" y="12" fontSize="9" fontFamily="Arial" fontWeight="bold">PAYMENT INSTRUCTIONS:</text>
+               <text x="5" y="25" fontSize="9" fontFamily="Arial">1. For cash payments, please keep the paid voucher receipt for any future reference</text>
+               <text x="5" y="38" fontSize="9" fontFamily="Arial">
+                  2. For payment related queries <tspan fontWeight="bold">Call or Whatsapp at Blinq Helpline 0333 0325467 | 0317 2893669</tspan>
+               </text>
+            </g>
+         </g>
+      );
+   };
+
+   return (
+      <div className="grid xl:grid-cols-5 gap-8 items-start">
+         <div className="xl:col-span-2 space-y-6">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
+               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Student Details</h3>
+               <div className="space-y-3">
+                  <input className={inputClasses} value={data.name} onChange={e=>setData({...data, name: e.target.value})} placeholder="Student Name" />
+                  <input className={inputClasses} value={data.rollNo} onChange={e=>setData({...data, rollNo: e.target.value})} placeholder="Roll No" />
+                  <div className="grid grid-cols-2 gap-3">
+                     <input type="date" className={inputClasses} value={data.dueDate.split('-').reverse().join('-')} onChange={e=>setData({...data, dueDate: e.target.value.split('-').reverse().join('-')})} />
+                     <input className={inputClasses} value={data.month} onChange={e=>setData({...data, month: e.target.value})} placeholder="Month" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                     <input type="number" className={inputClasses} value={data.netPayable} onChange={e=>setData({...data, netPayable: Number(e.target.value)})} placeholder="Net Payable" />
+                     <input type="number" className={inputClasses} value={data.invoiceAmount} onChange={e=>setData({...data, invoiceAmount: Number(e.target.value)})} placeholder="1Bill Amount" />
+                  </div>
+                  <input className={inputClasses} value={data.invoiceId} onChange={e=>setData({...data, invoiceId: e.target.value})} placeholder="1Bill Invoice ID" />
+               </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm space-y-4">
+               <h3 className="font-bold text-gray-800 dark:text-slate-100 border-b border-gray-100 dark:border-slate-800 pb-3">Branding & Logos</h3>
+               
+               <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2">Main Logo (e.g. SMIT)</label>
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
+                     <span className="text-xs font-medium">Upload Institution Logo</span>
+                     <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                  </label>
+                  {logo && <div className="mt-2 text-xs text-green-600 flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Logo Uploaded</div>}
+               </div>
+
+               <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2">Payment Partner Logo (e.g. Blinq)</label>
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
+                     <span className="text-xs font-medium">Upload Payment Logo</span>
+                     <input type="file" accept="image/*" className="hidden" onChange={handleBlinqLogoUpload} />
+                  </label>
+                  {blinqLogo && <div className="mt-2 text-xs text-green-600 flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Logo Uploaded</div>}
+               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+               <Button onClick={() => download('pdf')} className="bg-red-600 hover:bg-red-700 text-white border-0"><Download className="w-4 h-4 mr-2" /> Download PDF</Button>
+               <Button onClick={() => download('png')} className="bg-blue-600 hover:bg-blue-700 text-white border-0"><ImageIcon className="w-4 h-4 mr-2" /> Download PNG</Button>
+               <Button onClick={() => download('jpg')} variant="outline"><ImageIcon className="w-4 h-4 mr-2" /> Download JPG</Button>
+               <Button onClick={() => download('svg')} variant="outline"><FileText className="w-4 h-4 mr-2" /> Download SVG</Button>
+            </div>
+         </div>
+
+         <div className="xl:col-span-3">
+            <div className="w-full overflow-auto bg-gray-200 dark:bg-slate-950/50 p-4 rounded-xl border border-gray-300 dark:border-slate-800">
+               {/* Fixed SVG Output for Exact Layout */}
+               <svg 
+                  ref={svgRef}
+                  width="1100" 
+                  height="600" 
+                  viewBox="0 0 1020 550" 
+                  className="bg-white shadow-2xl mx-auto"
+                  xmlns="http://www.w3.org/2000/svg"
+               >
+                  <defs>
+                     <style>
+                        {`text { font-family: Arial, sans-serif; }`}
+                     </style>
+                  </defs>
+                  
+                  {/* Background */}
+                  <rect width="1020" height="550" fill="white" />
+                  
+                  {/* Student Copy */}
+                  {renderSlipContent('student', 15)}
+                  
+                  {/* Divider Line */}
+                  <line x1="500" y1="20" x2="500" y2="520" stroke="#d1d5db" strokeDasharray="5,5" />
+                  
+                  {/* Bank Copy */}
+                  {renderSlipContent('bank', 535)}
+               </svg>
+            </div>
+            <p className="text-center text-xs text-gray-500 mt-2">Preview (Scroll to see full)</p>
+         </div>
+      </div>
+   );
 };
