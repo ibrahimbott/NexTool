@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, TextArea, inputClasses } from '../components/UI';
-import { Plus, Trash2, Download, FileText, Save, Upload, RotateCcw, Settings, Hash, DollarSign, FolderOpen, Truck, Eye, Edit3, Image as ImageIcon, CreditCard, Banknote } from 'lucide-react';
+import { Plus, Trash2, Download, FileText, Save, Upload, RotateCcw, Settings, Hash, DollarSign, FolderOpen, Truck, Eye, Edit3, Image as ImageIcon, CreditCard, Banknote, User, Building } from 'lucide-react';
 import * as docx from 'docx';
 import FileSaver from 'file-saver';
 import jsPDF from 'jspdf';
@@ -21,6 +21,12 @@ interface ChallanItem {
   code: string;
   desc: string;
   qty: number;
+}
+
+interface FeeItem {
+  id: string;
+  title: string;
+  amount: number;
 }
 
 // --- Preview Scaler Component ---
@@ -53,7 +59,7 @@ const PreviewScaler: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           minHeight: '297mm',
           height: 'auto'
         }}
-        className="shadow-2xl transition-transform duration-200 ease-out bg-white"
+        className="shadow-2xl transition-transform duration-200 ease-out bg-white origin-top"
       >
         {children}
       </div>
@@ -86,6 +92,7 @@ export const InvoiceGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [currencySymbol, setCurrencySymbol] = useState('');
   const [taxRate, setTaxRate] = useState(0);
+  const [advance, setAdvance] = useState(0);
   const [stampImage, setStampImage] = useState<string | null>(null);
 
   const [header, setHeader] = useState({
@@ -131,7 +138,8 @@ export const InvoiceGenerator: React.FC = () => {
 
   const subtotal = items.reduce((sum, item) => sum + getItemAmount(item), 0);
   const taxAmount = (subtotal * taxRate) / 100;
-  const grandTotal = subtotal + taxAmount;
+  const totalBeforeAdvance = subtotal + taxAmount;
+  const grandTotal = totalBeforeAdvance - advance;
 
   const formatNumber = (num: number) => {
     const formatted = num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -149,7 +157,7 @@ export const InvoiceGenerator: React.FC = () => {
   };
 
   const saveInvoiceData = () => {
-    const data = { header, sender, recipient, items, taxRate, currencySymbol, stampImage };
+    const data = { header, sender, recipient, items, taxRate, advance, currencySymbol, stampImage };
     localStorage.setItem('nextool_invoice_data', JSON.stringify(data));
     alert('Invoice draft saved successfully!');
   };
@@ -164,6 +172,7 @@ export const InvoiceGenerator: React.FC = () => {
         if(data.recipient) setRecipient(data.recipient);
         if(data.items) setItems(data.items);
         if(data.taxRate !== undefined) setTaxRate(data.taxRate);
+        if(data.advance !== undefined) setAdvance(data.advance);
         if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
         if(data.stampImage) setStampImage(data.stampImage);
       } catch (e) { alert('Failed to load saved data.'); }
@@ -316,6 +325,9 @@ export const InvoiceGenerator: React.FC = () => {
         if (taxRate > 0) {
             addTotalLine(`Tax (${taxRate}%):`, formatNumber(taxAmount));
         }
+        if (advance > 0) {
+            addTotalLine("Advance:", formatNumber(advance));
+        }
         finalY += 2;
         doc.setFontSize(11);
         doc.setTextColor(59, 130, 246);
@@ -389,6 +401,10 @@ export const InvoiceGenerator: React.FC = () => {
                  <div>
                     <label className="text-xs font-bold text-blue-600 dark:text-slate-400 mb-2 block uppercase tracking-wide">Tax Rate %</label>
                     <input type="number" className={inputClasses} value={taxRate} onChange={e=>setTaxRate(Number(e.target.value))} />
+                 </div>
+                 <div className="col-span-2">
+                    <label className="text-xs font-bold text-blue-600 dark:text-slate-400 mb-2 block uppercase tracking-wide">Advance Payment</label>
+                    <input type="number" className={inputClasses} value={advance} onChange={e=>setAdvance(Number(e.target.value))} placeholder="Amount Paid in Advance" />
                  </div>
               </div>
            </div>
@@ -595,6 +611,12 @@ export const InvoiceGenerator: React.FC = () => {
                             <span className="text-gray-800 text-right">{formatNumber(taxAmount)}</span>
                          </div>
                       )}
+                      {advance > 0 && (
+                         <div className="flex justify-between text-gray-600">
+                            <span className="font-medium">Advance</span>
+                            <span className="text-right">{formatNumber(advance)}</span>
+                         </div>
+                      )}
                       <div className="flex justify-between font-bold text-lg text-blue-600 mt-2 pt-2 border-t border-gray-100">
                          <span>Total</span>
                          <span className="text-right">{formatNumber(grandTotal)}</span>
@@ -623,580 +645,340 @@ export const InvoiceGenerator: React.FC = () => {
 // ==========================================
 export const DeliveryChallanGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
-  
-  // Header with fields matching the screenshot
-  const [header, setHeader] = useState({
-    title: 'Delivery Challan',
-    invoiceNo: '121051',
-    ntn: '3379147-3',
-    forLabel: 'Office Material',
-    poNumber: 'QICT.PO.25.18097',
-    date: new Date().toISOString().split('T')[0] // Useful to keep, even if screenshot doesn't show it in top right header block.
-  });
-
-  // Sender details updated to include Person, Address2
-  const [sender, setSender] = useState({
-    company: 'H & H Emporium',
-    person: 'Tayyab Memon',
-    address1: 'Al Khayam Arcade Nursery',
-    address2: 'Karachi, Pakistan',
-    phone: '03452430044'
-  });
-
-  // Recipient details updated to include Header (DP World), Address2
-  const [recipient, setRecipient] = useState({
-    header: 'DP World',
-    company: 'Qasim International Container Terminal Pakistan Ltd',
-    address1: 'Berth 5 - 10 Marginal Wharves, port Muhammad Bin Qasim',
-    address2: 'P.O Box 6425 Karachi- 75020 Pakistan',
-    contact: 'UAN + 92 (21) 111786888, tell: +92 (21) 34739100'
-  });
-
-  // Items: S.No, Item Code, Description, Qty (Matching screenshot)
-  const [items, setItems] = useState<ChallanItem[]>([
-    { id: '1', code: 'MATERIAL', desc: 'Window Blinds (as per attached picture) approx. size 12\'+4\'\'x5\' with complete installation.', qty: 1 },
-    { id: '2', code: 'MATERIAL', desc: 'Window Blinds (as per attached picture) approx. size 2\'+6\'\'x5\' with complete installation.', qty: 2 }
-  ]);
-  
-  const [stampImage, setStampImage] = useState<string | null>(null);
-
-  const handleStampUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (ev) => { if(ev.target?.result) setStampImage(ev.target.result as string); };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
+  const [header, setHeader] = useState({ title: 'DELIVERY CHALLAN', number: 'DC-001', date: new Date().toISOString().split('T')[0], poNumber: '' });
+  const [sender, setSender] = useState({ company: 'My Company', address: '123 Business Rd, City', phone: '123-456-7890' });
+  const [recipient, setRecipient] = useState({ company: 'Client Company', address: '456 Client St, City', contact: 'John Doe' });
+  const [items, setItems] = useState<ChallanItem[]>([{ id: '1', code: 'ITM-001', desc: 'Sample Item', qty: 10 }]);
 
   const addItem = () => setItems([...items, { id: Date.now().toString(), code: '', desc: '', qty: 1 }]);
   const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
-  const updateItem = (id: string, field: keyof ChallanItem, val: string | number) => setItems(items.map(i => i.id === id ? { ...i, [field]: val } : i));
-  
-  const downloadPdf = () => { alert("PDF Download Logic Placeholder"); };
-  const downloadDocx = () => { alert("DOCX Download Logic Placeholder"); };
+  const updateItem = (id: string, field: keyof ChallanItem, val: string | number) => {
+    setItems(items.map(i => i.id === id ? { ...i, [field]: val } : i));
+  };
+
+  const downloadPdf = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(22); doc.setTextColor(59, 130, 246); doc.text(header.title, 195, 20, { align: 'right' });
+    
+    doc.setFontSize(10); doc.setTextColor(0);
+    doc.text(`No: ${header.number}`, 195, 30, { align: 'right' });
+    doc.text(`Date: ${header.date}`, 195, 35, { align: 'right' });
+    if(header.poNumber) doc.text(`PO Ref: ${header.poNumber}`, 195, 40, { align: 'right' });
+
+    doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text(sender.company, 14, 30);
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    const senderAddr = doc.splitTextToSize(sender.address, 80);
+    doc.text(senderAddr, 14, 35);
+    const senderAddrH = senderAddr.length * 5;
+    doc.text(sender.phone, 14, 35 + senderAddrH);
+
+    doc.text("Ship To:", 14, 60);
+    doc.setFont("helvetica", "bold"); doc.text(recipient.company, 14, 65);
+    doc.setFont("helvetica", "normal");
+    const recipAddr = doc.splitTextToSize(recipient.address, 80);
+    doc.text(recipAddr, 14, 70);
+    const recipAddrH = recipAddr.length * 5;
+    doc.text(recipient.contact, 14, 70 + recipAddrH);
+
+    autoTable(doc, {
+      startY: 90,
+      head: [['S.No', 'Code', 'Description', 'Quantity']],
+      body: items.map((item, i) => [i + 1, item.code, item.desc, item.qty]),
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 40;
+    doc.line(14, finalY, 70, finalY); doc.text("Receiver Signature", 14, finalY + 5);
+    doc.line(140, finalY, 195, finalY); doc.text("Authorized Signature", 140, finalY + 5);
+
+    doc.save(`Challan-${header.number}.pdf`);
+  };
 
   return (
     <div>
-      <MobileTabSwitcher active={activeTab} onChange={setActiveTab} />
-
-      <div className="grid xl:grid-cols-5 gap-8 items-start">
-        
-        {/* --- Editor Panel --- */}
-        <div className={`xl:col-span-2 space-y-6 ${activeTab === 'edit' ? 'block' : 'hidden xl:block'}`}>
-           <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border dark:border-slate-800 shadow-sm flex flex-wrap gap-2 sticky top-[90px] xl:top-0 z-20">
-               <Button onClick={downloadPdf} className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0 text-xs"><Download className="w-4 h-4 mr-1" /> PDF</Button>
-               <Button onClick={downloadDocx} className="flex-1 bg-blue-700 hover:bg-blue-800 text-white border-0 text-xs"><FileText className="w-4 h-4 mr-1" /> DOCX</Button>
-           </div>
-           
-           {/* Header Info */}
-           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
-               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Challan Info</h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Invoice #</label><input className={inputClasses} value={header.invoiceNo} onChange={e=>setHeader({...header, invoiceNo: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">NTN</label><input className={inputClasses} value={header.ntn} onChange={e=>setHeader({...header, ntn: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">FOR (Project)</label><input className={inputClasses} value={header.forLabel} onChange={e=>setHeader({...header, forLabel: e.target.value})} /></div>
-                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">P.O. #</label><input className={inputClasses} value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} /></div>
-                 <div className="md:col-span-2"><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Date (Metadata)</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
-               </div>
-           </div>
-
-           {/* Sender */}
-           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Sender</h3>
-              <div className="space-y-3">
-                 <input className={inputClasses + " font-bold"} value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} placeholder="Company Name"/>
-                 <input className={inputClasses} value={sender.person} onChange={e=>setSender({...sender, person: e.target.value})} placeholder="Person Name"/>
-                 <input className={inputClasses} value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} placeholder="Address Line 1"/>
-                 <input className={inputClasses} value={sender.address2} onChange={e=>setSender({...sender, address2: e.target.value})} placeholder="Address Line 2"/>
-                 <input className={inputClasses} value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} placeholder="Phone"/>
-              </div>
-           </div>
-
-           {/* Recipient */}
-           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
-              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Recipient</h3>
-              <div className="space-y-3">
-                 <input className={inputClasses} value={recipient.header} onChange={e=>setRecipient({...recipient, header: e.target.value})} placeholder="Header (e.g. DP World)"/>
-                 <input className={inputClasses + " font-bold"} value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} placeholder="Company Name"/>
-                 <input className={inputClasses} value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} placeholder="Address Line 1"/>
-                 <input className={inputClasses} value={recipient.address2} onChange={e=>setRecipient({...recipient, address2: e.target.value})} placeholder="Address Line 2"/>
-                 <input className={inputClasses} value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} placeholder="Contact Info"/>
-              </div>
-           </div>
-
-           {/* Items */}
-           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
-               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Items</h3>
-               <div className="space-y-4">
-                 {items.map((item, i) => (
-                    <div key={item.id} className="relative p-4 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800 group">
-                       <div className="flex justify-between items-center mb-3">
-                          <span className="font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">Item {i+1}</span>
-                          <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4"/></button>
-                       </div>
-                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                          <div className="col-span-1 md:col-span-4">
-                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Code</label>
-                             <input className={inputClasses + " p-2 text-sm"} placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
-                          </div>
-                          <div className="col-span-1 md:col-span-4">
-                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Qty</label>
-                             <input className={inputClasses + " p-2 text-sm"} type="number" placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
-                          </div>
-                          <div className="col-span-1 md:col-span-12">
-                             <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Description</label>
-                             <TextArea 
-                               rows={3} 
-                               className="min-h-[80px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white" 
-                               placeholder="Description" 
-                               value={item.desc} 
-                               onChange={e=>updateItem(item.id, 'desc', e.target.value)} 
-                             />
-                          </div>
-                       </div>
-                    </div>
-                 ))}
-                 <Button variant="outline" className="w-full border-dashed" onClick={addItem}><Plus className="w-4 h-4 mr-2" /> Add Item</Button>
-               </div>
-           </div>
-
-           {/* Stamp */}
-           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
-               <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
-                  <Upload className="w-8 h-8 mb-2"/> 
-                  <span className="text-sm font-medium">Upload Stamp/Signature</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleStampUpload} />
-               </label>
-               {stampImage && (
-                 <div className="mt-4 flex justify-center relative">
-                   <img src={stampImage} className="h-16 border dark:border-slate-700 bg-white p-1 rounded" />
-                   <button onClick={() => setStampImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><Trash2 className="w-3 h-3"/></button>
-                 </div>
-               )}
-           </div>
-        </div>
-
-        {/* --- Preview Panel (MATCHING SCREENSHOT) --- */}
-        <div className={`xl:col-span-3 ${activeTab === 'preview' ? 'block' : 'hidden xl:block'}`}>
-           <PreviewScaler>
-             <div className="w-[210mm] min-h-[297mm] p-[10mm] relative text-gray-900 bg-white font-sans">
-                 
-                 {/* Header Right Block */}
-                 <div className="absolute top-[10mm] right-[10mm] text-right">
-                    <h1 className="text-3xl font-bold text-blue-600 mb-1">Delivery Challan</h1>
-                    <div className="text-sm font-bold text-gray-900 mb-1">INVOICE #{header.invoiceNo}</div>
-                    <div className="text-sm font-bold text-gray-900 mb-2">NTN {header.ntn}</div>
-                    
-                    <div className="flex justify-end items-center gap-1 mb-1">
-                       <span className="font-bold text-blue-600 text-sm">FOR</span>
-                       <span className="text-gray-800 text-sm">{header.forLabel}</span>
-                    </div>
-                    <div className="font-bold text-blue-600 text-sm">P.O.#{header.poNumber}</div>
+        <MobileTabSwitcher active={activeTab} onChange={setActiveTab} />
+        <div className="grid xl:grid-cols-5 gap-8 items-start">
+             <div className={`xl:col-span-2 space-y-6 ${activeTab === 'edit' ? 'block' : 'hidden xl:block'}`}>
+                 <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-800 shadow-sm sticky top-0 z-10 flex gap-2">
+                     <Button onClick={downloadPdf} className="w-full"><Download className="w-4 h-4 mr-2"/> Download PDF</Button>
                  </div>
                  
-                 {/* Sender (Left) */}
-                 <div className="mt-12 mb-8 max-w-[60%]">
-                    <h2 className="text-lg font-bold text-gray-700 mb-1">{sender.company}</h2>
-                    <div className="text-sm text-gray-800 space-y-0.5 leading-snug">
-                       <p>{sender.person}</p>
-                       <p>{sender.address1}</p>
-                       <p>{sender.address2}</p>
-                       <p>Phone {sender.phone}</p>
+                 <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                    <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-3">Challan Details</h3>
+                    <div className="space-y-3">
+                       <input className={inputClasses} placeholder="Number" value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} />
+                       <input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} />
+                       <input className={inputClasses} placeholder="PO Number (Optional)" value={header.poNumber} onChange={e=>setHeader({...header, poNumber: e.target.value})} />
                     </div>
                  </div>
 
-                 {/* Recipient (Left, below sender) */}
-                 <div className="mb-10 max-w-[60%]">
-                    {recipient.header && <p className="text-sm text-gray-800 mb-1">{recipient.header}</p>}
-                    <h3 className="text-sm font-bold underline decoration-2 decoration-gray-800 mb-2">{recipient.company}</h3>
-                    <div className="text-sm text-gray-800 space-y-0.5 leading-snug">
-                       <p>{recipient.address1}</p>
-                       <p>{recipient.address2}</p>
-                       <p>{recipient.contact}</p>
+                 <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                    <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-3">Sender</h3>
+                    <div className="space-y-3">
+                       <input className={inputClasses} placeholder="Company" value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} />
+                       <input className={inputClasses} placeholder="Address" value={sender.address} onChange={e=>setSender({...sender, address: e.target.value})} />
+                       <input className={inputClasses} placeholder="Phone" value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} />
                     </div>
                  </div>
 
-                 {/* Items Table (Matching columns: S.No, Item Code, Description, Qty) */}
-                 <table className="w-full text-sm mb-12">
-                    <thead>
-                       <tr className="border-t border-b border-blue-200 text-left">
-                          <th className="py-2 w-12 text-center font-bold text-blue-600">S. No</th>
-                          <th className="py-2 w-32 font-bold text-blue-600">Item Code</th>
-                          <th className="py-2 font-bold text-blue-600">Description</th>
-                          <th className="py-2 w-16 text-center font-bold text-blue-600">Qty</th>
-                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                       {items.map((item, i) => (
-                          <tr key={item.id} className="align-top">
-                             <td className="py-4 text-center text-gray-900">{i+1}</td>
-                             <td className="py-4 font-bold text-gray-900">{item.code}</td>
-                             <td className="py-4 text-gray-900 font-bold whitespace-pre-wrap leading-snug">{item.desc}</td>
-                             <td className="py-4 text-center font-bold text-gray-900">{item.qty}</td>
-                          </tr>
-                       ))}
-                    </tbody>
-                 </table>
-                 
-                 <div className="border-t border-blue-200 w-full mb-8"></div>
+                 <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                    <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-3">Recipient</h3>
+                    <div className="space-y-3">
+                       <input className={inputClasses} placeholder="Company" value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} />
+                       <input className={inputClasses} placeholder="Address" value={recipient.address} onChange={e=>setRecipient({...recipient, address: e.target.value})} />
+                       <input className={inputClasses} placeholder="Contact Person" value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} />
+                    </div>
+                 </div>
 
-                 {/* Stamp & Sign */}
-                 <div className="absolute bottom-[20mm] right-[20mm] w-48 text-center">
-                    {stampImage && (
-                       <img src={stampImage} className="h-16 w-auto mx-auto mb-2 object-contain" alt="Stamp" />
-                    )}
-                    <div className="border-t border-gray-400 pt-2 text-gray-600 text-sm">Stamp & Sign</div>
+                 <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                    <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-3">Items</h3>
+                    <div className="space-y-4">
+                        {items.map((item, i) => (
+                           <div key={item.id} className="p-3 bg-gray-50 dark:bg-slate-950 rounded border dark:border-slate-800">
+                              <div className="flex justify-between mb-2">
+                                 <span className="text-xs font-bold text-gray-500">Item {i+1}</span>
+                                 <button onClick={()=>removeItem(item.id)} className="text-red-500"><Trash2 className="w-3 h-3"/></button>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                 <input className={inputClasses + " p-1 text-sm col-span-1"} placeholder="Code" value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
+                                 <input className={inputClasses + " p-1 text-sm col-span-2"} placeholder="Description" value={item.desc} onChange={e=>updateItem(item.id, 'desc', e.target.value)} />
+                                 <input type="number" className={inputClasses + " p-1 text-sm col-span-1"} placeholder="Qty" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
+                              </div>
+                           </div>
+                        ))}
+                        <Button variant="outline" size="sm" onClick={addItem} className="w-full"><Plus className="w-4 h-4 mr-2"/> Add Item</Button>
+                    </div>
                  </div>
              </div>
-           </PreviewScaler>
+
+             <div className={`xl:col-span-3 ${activeTab === 'preview' ? 'block' : 'hidden xl:block'}`}>
+                 <PreviewScaler>
+                     <div className="w-[210mm] min-h-[297mm] p-[15mm] bg-white relative text-gray-900">
+                         <div className="text-right mb-8">
+                             <h1 className="text-3xl font-bold text-blue-600 mb-1">{header.title}</h1>
+                             <div className="text-sm">No: <strong>{header.number}</strong></div>
+                             <div className="text-sm">Date: <strong>{header.date}</strong></div>
+                             {header.poNumber && <div className="text-sm">PO Ref: <strong>{header.poNumber}</strong></div>}
+                         </div>
+
+                         <div className="flex justify-between mb-10">
+                             <div className="w-[45%]">
+                                 <div className="text-sm font-bold text-gray-500 uppercase mb-1">From</div>
+                                 <div className="font-bold text-lg">{sender.company}</div>
+                                 <div className="text-sm text-gray-700 whitespace-pre-wrap">{sender.address}</div>
+                                 <div className="text-sm text-gray-700 mt-1">{sender.phone}</div>
+                             </div>
+                             <div className="w-[45%]">
+                                 <div className="text-sm font-bold text-gray-500 uppercase mb-1">Ship To</div>
+                                 <div className="font-bold text-lg">{recipient.company}</div>
+                                 <div className="text-sm text-gray-700 whitespace-pre-wrap">{recipient.address}</div>
+                                 <div className="text-sm text-gray-700 mt-1">{recipient.contact}</div>
+                             </div>
+                         </div>
+
+                         <table className="w-full text-sm mb-12">
+                             <thead>
+                                 <tr className="border-b-2 border-blue-500">
+                                     <th className="py-2 text-left">S.No</th>
+                                     <th className="py-2 text-left">Code</th>
+                                     <th className="py-2 text-left">Description</th>
+                                     <th className="py-2 text-center">Quantity</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 {items.map((item, i) => (
+                                     <tr key={item.id} className="border-b border-gray-200">
+                                         <td className="py-3 text-gray-500">{i+1}</td>
+                                         <td className="py-3 font-medium">{item.code}</td>
+                                         <td className="py-3">{item.desc}</td>
+                                         <td className="py-3 text-center font-bold">{item.qty}</td>
+                                     </tr>
+                                 ))}
+                             </tbody>
+                         </table>
+
+                         <div className="absolute bottom-[40mm] left-[15mm] right-[15mm] flex justify-between">
+                             <div className="text-center w-40">
+                                 <div className="border-b border-gray-400 mb-2"></div>
+                                 <div className="text-xs font-bold text-gray-500 uppercase">Receiver Signature</div>
+                             </div>
+                             <div className="text-center w-40">
+                                 <div className="border-b border-gray-400 mb-2"></div>
+                                 <div className="text-xs font-bold text-gray-500 uppercase">Authorized Signature</div>
+                             </div>
+                         </div>
+                     </div>
+                 </PreviewScaler>
+             </div>
         </div>
-      </div>
     </div>
   );
 };
 
 // ==========================================
-// 3. FEES SLIP GENERATOR (SMIT STYLE)
+// 3. FEES SLIP GENERATOR
 // ==========================================
 export const FeesSlipGenerator: React.FC = () => {
-   const [data, setData] = useState({
-      name: 'Ibrahim Tayyab',
-      rollNo: '786032',
-      dueDate: '19-12-2025',
-      month: 'December',
-      netPayable: 1000,
-      invoiceAmount: 1035,
-      invoiceId: '100333 0391 2535 1000 05'
-   });
+    const [school, setSchool] = useState({ name: 'International School System', address: '123 Education City', contact: '021-1234567' });
+    const [student, setStudent] = useState({ name: 'John Doe', id: 'ST-2024-001', class: 'Grade 10 - A', month: 'October 2024', issueDate: new Date().toISOString().split('T')[0], dueDate: new Date(Date.now() + 864000000).toISOString().split('T')[0] });
+    const [fees, setFees] = useState<FeeItem[]>([{ id: '1', title: 'Tuition Fee', amount: 5000 }, { id: '2', title: 'Lab Charges', amount: 1000 }]);
+    const [copies] = useState(['Office Copy', 'Student Copy', 'Bank Copy']);
 
-   const [logo, setLogo] = useState<string | null>(null);
-   const [blinqLogo, setBlinqLogo] = useState<string | null>(null);
-   const svgRef = useRef<SVGSVGElement>(null);
+    const total = fees.reduce((acc, curr) => acc + curr.amount, 0);
 
-   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-         const reader = new FileReader();
-         reader.onload = (ev) => {
-            if (ev.target?.result) setLogo(ev.target.result as string);
-         };
-         reader.readAsDataURL(e.target.files[0]);
-      }
-   };
+    const addFee = () => setFees([...fees, { id: Date.now().toString(), title: '', amount: 0 }]);
+    const removeFee = (id: string) => setFees(fees.filter(f => f.id !== id));
+    const updateFee = (id: string, field: keyof FeeItem, val: string | number) => {
+        setFees(fees.map(f => f.id === id ? { ...f, [field]: val } : f));
+    };
 
-   const handleBlinqLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-         const reader = new FileReader();
-         reader.onload = (ev) => {
-            if (ev.target?.result) setBlinqLogo(ev.target.result as string);
-         };
-         reader.readAsDataURL(e.target.files[0]);
-      }
-   };
-
-   const download = async (format: 'pdf' | 'png' | 'jpg' | 'svg') => {
-      if (!svgRef.current) return;
-      
-      const svgData = new XMLSerializer().serializeToString(svgRef.current);
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
-
-      if (format === 'svg') {
-         FileSaver.saveAs(svgBlob, `Fee-Slip-${data.rollNo}.svg`);
-         return;
-      }
-
-      const img = new Image();
-      img.src = url;
-      await new Promise((resolve) => { img.onload = resolve; });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 1200; // High resolution
-      canvas.height = 800;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      // White background for JPG/PDF
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, 1200, 800);
-
-      if (format === 'png') {
-         canvas.toBlob(blob => FileSaver.saveAs(blob!, `Fee-Slip-${data.rollNo}.png`));
-      } else if (format === 'jpg') {
-         canvas.toBlob(blob => FileSaver.saveAs(blob!, `Fee-Slip-${data.rollNo}.jpg`), 'image/jpeg', 0.9);
-      } else if (format === 'pdf') {
-         const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1200, 800] });
-         pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 1200, 800);
-         pdf.save(`Fee-Slip-${data.rollNo}.pdf`);
-      }
-   };
-
-   // Helper to render one side of the slip
-   const renderSlipContent = (type: 'student' | 'bank', xOffset: number) => {
-      const headerColor = "#595959"; 
-      const borderColor = "#000000";
-      const logoBlue = "#2563eb";
-      const logoGreen = "#16a34a";
-      const formatCurrency = (val: number) => val.toLocaleString();
-      
-      const WIDTH = 470; // Total width of the content area
-      const GRID_Y = 140; // Push grid down to make room for logo
-
-      return (
-         <g transform={`translate(${xOffset}, 0)`}>
-            {/* Outer Border for the slip (Optional, helps define "paper" edge) */}
-            <rect x="-10" y="-10" width={WIDTH + 20} height="520" fill="none" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4 4" />
-
-            {/* --- Logo Area --- */}
-            {/* Increased height allowance to 120px and width to 300px for a big logo */}
-            <g transform="translate(0, 10)">
-               {logo ? (
-                  <image 
-                    href={logo} 
-                    x="0" 
-                    y="0" 
-                    width="400" 
-                    height="120" 
-                    preserveAspectRatio="xMinYMid meet" 
-                  />
-               ) : (
-                  // Fallback logo
-                  <g transform="translate(20, 20)">
-                     {/* Fallback SMIT Text Logo Approximation */}
-                     <path d="M10,40 Q10,10 40,10 L45,10" fill="none" stroke={logoBlue} strokeWidth="5" strokeLinecap="round" />
-                     <text x="10" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>S</text>
-                     <text x="45" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>M</text>
-                     <circle cx="95" cy="25" r="5" fill={logoGreen} />
-                     <text x="88" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>I</text>
-                     <text x="110" y="55" fontFamily="Arial" fontWeight="bold" fontSize="40" fill={logoBlue}>T</text>
-                     <path d="M45,20 L65,10 L85,20 L65,30 Z" fill={logoBlue} />
-                     <path d="M85,20 L85,35 L65,30" fill="none" stroke={logoBlue} strokeWidth="2" />
-                     <text x="10" y="75" fontFamily="Arial" fontSize="10" fontWeight="bold" letterSpacing="1" fill="#000">SAYLANI MASS IT TRAINING</text>
-                  </g>
-               )}
-            </g>
+    const generatePdf = () => {
+        const doc = new jsPDF('p', 'mm', 'a4'); 
+        const pageHeight = 297;
+        const slipWidth = 210 / 3;
+        
+        copies.forEach((copyName, i) => {
+            const xOffset = i * slipWidth;
+            const startX = xOffset + 5;
+            let y = 10;
             
-            {/* Copy Label (Top Right) */}
-            <text x={WIDTH} y="30" textAnchor="end" fontFamily="Arial" fontSize="14" fontWeight="bold" fill="#000">
-               {type === 'student' ? 'Student Copy' : 'Bank Copy'}
-            </text>
+            doc.setDrawColor(200);
+            if (i > 0) doc.line(xOffset, 5, xOffset, pageHeight - 5); 
+            
+            doc.setFontSize(10); doc.setFont("helvetica", "bold");
+            doc.text(school.name, startX + 30, y, { align: 'center', maxWidth: 60 });
+            y += 5;
+            doc.setFontSize(8); doc.setFont("helvetica", "normal");
+            doc.text(school.address, startX + 30, y, { align: 'center', maxWidth: 60 });
+            y += 10;
+            
+            doc.setFontSize(10); doc.setFont("helvetica", "bold");
+            doc.text("FEE SLIP", startX + 30, y, { align: 'center' });
+            y += 5;
+            doc.setFontSize(8); doc.setFont("helvetica", "italic");
+            doc.text(`(${copyName})`, startX + 30, y, { align: 'center' });
+            y += 8;
 
-            {/* --- Info Grid --- */}
-            <g transform={`translate(0, ${GRID_Y})`}>
-               {/* Column Widths: 110 | 140 | 80 | 140 = 470 total */}
-               
-               {/* Row 1 */}
-               {/* Customer Name Label */}
-               <rect x="0" y="0" width="110" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
-               <text x="5" y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Customer Name :</text>
-               
-               {/* Customer Name Value */}
-               <rect x="110" y="0" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x="115" y="17" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold" clipPath="url(#clip-name)">{data.name}</text>
+            doc.setFont("helvetica", "normal");
+            const addField = (label: string, val: string) => {
+                doc.text(label, startX, y);
+                doc.text(val, startX + 60, y, { align: 'right' });
+                y += 4;
+            };
+            
+            addField("Student:", student.name);
+            addField("Roll No:", student.id);
+            addField("Class:", student.class);
+            addField("Month:", student.month);
+            addField("Issue Date:", student.issueDate);
+            addField("Due Date:", student.dueDate);
+            
+            y += 2;
+            doc.line(startX, y, startX + 60, y);
+            y += 5;
 
-               {/* Roll No Label */}
-               <rect x="250" y="0" width="80" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
-               <text x="255" y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Roll No.</text>
-               
-               {/* Roll No Value */}
-               <rect x="330" y="0" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x="335" y="17" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold">{data.rollNo}</text>
+            doc.setFont("helvetica", "bold");
+            doc.text("Description", startX, y);
+            doc.text("Amount", startX + 60, y, { align: 'right' });
+            y += 4;
+            doc.setFont("helvetica", "normal");
+            
+            fees.forEach(fee => {
+                doc.text(fee.title, startX, y);
+                doc.text(fee.amount.toString(), startX + 60, y, { align: 'right' });
+                y += 4;
+            });
+            
+            y += 2;
+            doc.line(startX, y, startX + 60, y);
+            y += 5;
+            
+            doc.setFont("helvetica", "bold");
+            doc.text("Total Payable:", startX, y);
+            doc.text(total.toString(), startX + 60, y, { align: 'right' });
+            
+            y += 25;
+            doc.line(startX + 30, y, startX + 60, y);
+            doc.setFontSize(7);
+            doc.text("Authorized Signature", startX + 45, y + 3, { align: 'center' });
+        });
 
-               {/* Row 2 */}
-               {/* Due Date Label */}
-               <rect x="0" y="25" width="110" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
-               <text x="5" y="42" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Due Date :</text>
-               
-               {/* Due Date Value */}
-               <rect x="110" y="25" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x="115" y="42" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold">{data.dueDate}</text>
+        doc.save(`FeeSlip-${student.id}.pdf`);
+    };
 
-               {/* Month Label */}
-               <rect x="250" y="25" width="80" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
-               <text x="255" y="42" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Month :</text>
-               
-               {/* Month Value */}
-               <rect x="330" y="25" width="140" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x="335" y="42" fill="black" fontSize="11" fontFamily="Arial" fontWeight="bold">{data.month}</text>
-            </g>
+    return (
+       <div className="grid md:grid-cols-2 gap-8">
+         <div className="space-y-6">
+             <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4">School Details</h3>
+                <div className="space-y-3">
+                   <input className={inputClasses} placeholder="School Name" value={school.name} onChange={e=>setSchool({...school, name: e.target.value})} />
+                   <input className={inputClasses} placeholder="Address" value={school.address} onChange={e=>setSchool({...school, address: e.target.value})} />
+                </div>
+             </div>
 
-            {/* --- Invoice ID Box --- */}
-            <g transform={`translate(0, ${GRID_Y + 60})`}>
-               <rect x="0" y="0" width={WIDTH} height="30" fill="none" stroke={borderColor} strokeWidth="0.5" />
-               <text x={WIDTH / 2} y="20" textAnchor="middle" fontSize="13" fontFamily="Arial" fontWeight="bold">
-                  1BILL INVOICE ID: {data.invoiceId}
-               </text>
-            </g>
+             <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4">Student Details</h3>
+                <div className="space-y-3">
+                   <input className={inputClasses} placeholder="Student Name" value={student.name} onChange={e=>setStudent({...student, name: e.target.value})} />
+                   <input className={inputClasses} placeholder="Roll No / ID" value={student.id} onChange={e=>setStudent({...student, id: e.target.value})} />
+                   <input className={inputClasses} placeholder="Class / Section" value={student.class} onChange={e=>setStudent({...student, class: e.target.value})} />
+                   <input className={inputClasses} placeholder="Month" value={student.month} onChange={e=>setStudent({...student, month: e.target.value})} />
+                   <div className="grid grid-cols-2 gap-2">
+                       <div><label className="text-xs">Issue Date</label><input type="date" className={inputClasses} value={student.issueDate} onChange={e=>setStudent({...student, issueDate: e.target.value})} /></div>
+                       <div><label className="text-xs">Due Date</label><input type="date" className={inputClasses} value={student.dueDate} onChange={e=>setStudent({...student, dueDate: e.target.value})} /></div>
+                   </div>
+                </div>
+             </div>
 
-            {/* --- Payment Options Box --- */}
-            <g transform={`translate(0, ${GRID_Y + 100})`}>
-               <rect x="0" y="0" width={WIDTH} height="120" fill="none" stroke={borderColor} strokeWidth="0.5" />
-               
-               {/* Vertical Divider for Logo */}
-               <line x1="100" y1="0" x2="100" y2="120" stroke={borderColor} strokeWidth="0.5" />
-               {/* Horizontal Divider */}
-               <line x1="100" y1="60" x2={WIDTH} y2="60" stroke={borderColor} strokeWidth="0.5" />
-
-               {/* Blinq Logo */}
-               <g transform="translate(5, 35)">
-                  {blinqLogo ? (
-                     <image href={blinqLogo} x="0" y="0" width="90" height="50" preserveAspectRatio="xMidYMid meet" />
-                  ) : (
-                     <g>
-                        <text x="10" y="30" fontFamily="Arial" fontWeight="900" fontSize="24" fill="black">Blinq</text>
-                        <circle cx="80" cy="18" r="4" fill="#fbbf24" />
-                     </g>
-                  )}
-               </g>
-
-               {/* Cash Section */}
-               <text x="105" y="15" fontSize="10" fontFamily="Arial">
-                  Pay in <tspan fontWeight="bold">Cash</tspan> using 1Bill Invoice ID at any branch of :
-               </text>
-               <g transform="translate(105, 30)" fontSize="9" fontFamily="Arial" fontWeight="bold">
-                  {/* Using slightly tighter spacing to fit width */}
-                  <text x="0" y="0">• Meezan</text>
-                  <text x="80" y="0">• Alfalah</text>
-                  <text x="160" y="0">• Faysal</text>
-                  <text x="230" y="0">• Habib Metro</text>
-                  <text x="310" y="0">• Al Baraka</text>
-
-                  <text x="0" y="15">• Bank Islami</text>
-                  <text x="80" y="15">• Askari</text>
-                  <text x="160" y="15">• DIB</text>
-                  <text x="230" y="15">• TCS</text>
-                  <text x="310" y="15">• Leopards</text>
-               </g>
-
-               {/* Online Section */}
-               <text x="105" y="75" fontSize="10" fontFamily="Arial">
-                  Pay <tspan fontWeight="bold">Online</tspan> using 1Bill Invoice ID via
-               </text>
-               <g transform="translate(105, 95)" fontSize="9" fontFamily="Arial" fontWeight="bold">
-                  <text x="0" y="0">• Internet Banking</text>
-                  <text x="100" y="0">• Mobile Banking</text>
-                  <text x="190" y="0">• EasyPaisa Wallet</text>
-                  <text x="290" y="0">• JazzCash Wallet</text>
-               </g>
-            </g>
-
-            {/* --- Fee Table --- */}
-            <g transform={`translate(0, ${GRID_Y + 230})`}>
-               {/* Head */}
-               <rect x="0" y="0" width={WIDTH - 150} height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
-               <text x="5" y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold">Fee Head Information</text>
-               
-               <rect x={WIDTH - 150} y="0" width="150" height="25" fill={headerColor} stroke={borderColor} strokeWidth="0.5" />
-               <text x={WIDTH - 75} y="17" fill="white" fontSize="11" fontFamily="Arial" fontWeight="bold" textAnchor="middle">Amount</text>
-
-               {/* Net Payable */}
-               <rect x="0" y="25" width={WIDTH - 150} height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x="5" y="42" fontSize="11" fontFamily="Arial" fontWeight="bold">Net Payable</text>
-               <rect x={WIDTH - 150} y="25" width="150" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x={WIDTH - 75} y="42" fontSize="11" fontFamily="Arial" textAnchor="middle">{formatCurrency(data.netPayable)}</text>
-
-               {/* 1Bill Amount */}
-               <rect x="0" y="50" width={WIDTH - 150} height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x="5" y="67" fontSize="11" fontFamily="Arial" fontWeight="bold">1Bill Invoice Amount</text>
-               <rect x={WIDTH - 150} y="50" width="150" height="25" fill="white" stroke={borderColor} strokeWidth="0.5" />
-               <text x={WIDTH - 75} y="67" fontSize="11" fontFamily="Arial" textAnchor="middle">{formatCurrency(data.invoiceAmount)}</text>
-            </g>
-
-            {/* --- Instructions --- */}
-            <g transform={`translate(0, ${GRID_Y + 315})`}>
-               <rect x="0" y="0" width={WIDTH} height="50" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
-               <text x="5" y="12" fontSize="9" fontFamily="Arial" fontWeight="bold">PAYMENT INSTRUCTIONS:</text>
-               <text x="5" y="25" fontSize="9" fontFamily="Arial">1. For cash payments, please keep the paid voucher receipt for any future reference</text>
-               <text x="5" y="38" fontSize="9" fontFamily="Arial">
-                  2. For payment related queries <tspan fontWeight="bold">Call or Whatsapp at Blinq Helpline 0333 0325467 | 0317 2893669</tspan>
-               </text>
-            </g>
-         </g>
-      );
-   };
-
-   return (
-      <div className="grid xl:grid-cols-5 gap-8 items-start">
-         <div className="xl:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm">
-               <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Student Details</h3>
-               <div className="space-y-3">
-                  <input className={inputClasses} value={data.name} onChange={e=>setData({...data, name: e.target.value})} placeholder="Student Name" />
-                  <input className={inputClasses} value={data.rollNo} onChange={e=>setData({...data, rollNo: e.target.value})} placeholder="Roll No" />
-                  <div className="grid grid-cols-2 gap-3">
-                     <input type="date" className={inputClasses} value={data.dueDate.split('-').reverse().join('-')} onChange={e=>setData({...data, dueDate: e.target.value.split('-').reverse().join('-')})} />
-                     <input className={inputClasses} value={data.month} onChange={e=>setData({...data, month: e.target.value})} placeholder="Month" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                     <input type="number" className={inputClasses} value={data.netPayable} onChange={e=>setData({...data, netPayable: Number(e.target.value)})} placeholder="Net Payable" />
-                     <input type="number" className={inputClasses} value={data.invoiceAmount} onChange={e=>setData({...data, invoiceAmount: Number(e.target.value)})} placeholder="1Bill Amount" />
-                  </div>
-                  <input className={inputClasses} value={data.invoiceId} onChange={e=>setData({...data, invoiceId: e.target.value})} placeholder="1Bill Invoice ID" />
-               </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border dark:border-slate-800 shadow-sm space-y-4">
-               <h3 className="font-bold text-gray-800 dark:text-slate-100 border-b border-gray-100 dark:border-slate-800 pb-3">Branding & Logos</h3>
-               
-               <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2">Main Logo (e.g. SMIT)</label>
-                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
-                     <span className="text-xs font-medium">Upload Institution Logo</span>
-                     <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                  </label>
-                  {logo && <div className="mt-2 text-xs text-green-600 flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Logo Uploaded</div>}
-               </div>
-
-               <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2">Payment Partner Logo (e.g. Blinq)</label>
-                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
-                     <span className="text-xs font-medium">Upload Payment Logo</span>
-                     <input type="file" accept="image/*" className="hidden" onChange={handleBlinqLogoUpload} />
-                  </label>
-                  {blinqLogo && <div className="mt-2 text-xs text-green-600 flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Logo Uploaded</div>}
-               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-               <Button onClick={() => download('pdf')} className="bg-red-600 hover:bg-red-700 text-white border-0"><Download className="w-4 h-4 mr-2" /> Download PDF</Button>
-               <Button onClick={() => download('png')} className="bg-blue-600 hover:bg-blue-700 text-white border-0"><ImageIcon className="w-4 h-4 mr-2" /> Download PNG</Button>
-               <Button onClick={() => download('jpg')} variant="outline"><ImageIcon className="w-4 h-4 mr-2" /> Download JPG</Button>
-               <Button onClick={() => download('svg')} variant="outline"><FileText className="w-4 h-4 mr-2" /> Download SVG</Button>
-            </div>
+             <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-gray-800 dark:text-slate-100">Fee Breakdown</h3>
+                    <Button size="sm" variant="outline" onClick={addFee}><Plus className="w-3 h-3 mr-1"/> Add</Button>
+                </div>
+                <div className="space-y-3">
+                   {fees.map(f => (
+                       <div key={f.id} className="flex gap-2 items-center">
+                           <input className={inputClasses + " p-2 text-sm flex-1"} placeholder="Title" value={f.title} onChange={e=>updateFee(f.id, 'title', e.target.value)} />
+                           <input type="number" className={inputClasses + " p-2 text-sm w-24"} placeholder="Amount" value={f.amount} onChange={e=>updateFee(f.id, 'amount', Number(e.target.value))} />
+                           <button onClick={()=>removeFee(f.id)} className="text-red-500"><Trash2 className="w-4 h-4"/></button>
+                       </div>
+                   ))}
+                   <div className="pt-3 border-t flex justify-between font-bold text-gray-800 dark:text-slate-200">
+                       <span>Total</span>
+                       <span>{total}</span>
+                   </div>
+                </div>
+             </div>
          </div>
 
-         <div className="xl:col-span-3">
-            <div className="w-full overflow-auto bg-gray-200 dark:bg-slate-950/50 p-4 rounded-xl border border-gray-300 dark:border-slate-800">
-               {/* Fixed SVG Output for Exact Layout */}
-               <svg 
-                  ref={svgRef}
-                  width="1100" 
-                  height="600" 
-                  viewBox="0 0 1020 550" 
-                  className="bg-white shadow-2xl mx-auto"
-                  xmlns="http://www.w3.org/2000/svg"
-               >
-                  <defs>
-                     <style>
-                        {`text { font-family: Arial, sans-serif; }`}
-                     </style>
-                  </defs>
-                  
-                  {/* Background */}
-                  <rect width="1020" height="550" fill="white" />
-                  
-                  {/* Student Copy */}
-                  {renderSlipContent('student', 15)}
-                  
-                  {/* Divider Line */}
-                  <line x1="500" y1="20" x2="500" y2="520" stroke="#d1d5db" strokeDasharray="5,5" />
-                  
-                  {/* Bank Copy */}
-                  {renderSlipContent('bank', 535)}
-               </svg>
-            </div>
-            <p className="text-center text-xs text-gray-500 mt-2">Preview (Scroll to see full)</p>
+         <div className="flex flex-col items-center justify-center bg-gray-100 dark:bg-slate-950/50 rounded-xl p-8 border border-dashed border-gray-300 dark:border-slate-800">
+             <div className="bg-white p-6 shadow-xl w-64 text-[10px] leading-tight mb-8">
+                 <div className="text-center font-bold text-sm mb-1">{school.name}</div>
+                 <div className="text-center text-gray-500 mb-4">{school.address}</div>
+                 <div className="text-center font-bold border-b pb-2 mb-2">FEE SLIP (Preview)</div>
+                 
+                 <div className="space-y-1 mb-4">
+                     <div className="flex justify-between"><span>Name:</span><span className="font-medium">{student.name}</span></div>
+                     <div className="flex justify-between"><span>Roll:</span><span className="font-medium">{student.id}</span></div>
+                     <div className="flex justify-between"><span>Class:</span><span className="font-medium">{student.class}</span></div>
+                 </div>
+
+                 <div className="space-y-1 mb-2">
+                     <div className="flex justify-between font-bold border-b pb-1"><span>Desc</span><span>Amount</span></div>
+                     {fees.map(f => (
+                         <div key={f.id} className="flex justify-between"><span>{f.title}</span><span>{f.amount}</span></div>
+                     ))}
+                 </div>
+                 <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>{total}</span></div>
+             </div>
+             
+             <Button onClick={generatePdf} className="w-64 bg-blue-600 hover:bg-blue-700 text-white">
+                 <Download className="w-4 h-4 mr-2" /> Download 3-Copy PDF
+             </Button>
+             <p className="text-xs text-gray-500 mt-4 text-center max-w-xs">Generates a standard A4 page with Student, Office, and Bank copies.</p>
          </div>
-      </div>
-   );
+       </div>
+    );
 };
