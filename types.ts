@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type Category = 'Text' | 'Image' | 'Developer' | 'PDF' | 'SEO' | 'CSS' | 'Math' | 'Converter' | 'Business';
+export type Category = 'Text' | 'Image' | 'Developer' | 'PDF' | 'SEO' | 'CSS' | 'Math' | 'Converter' | 'Business' | 'Education';
 
 export interface Tool {
   id: string;

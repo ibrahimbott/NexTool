@@ -355,9 +355,70 @@ export const InvoiceGenerator: React.FC = () => {
 
   const downloadDocx = () => {
     const doc = new docx.Document({
-      sections: [{ children: [ new docx.Paragraph({ text: "Invoice Generated via NexTool" }) ] }]
+      sections: [{
+        children: [
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: header.title, bold: true, size: 48, color: "3b82f6" }),
+            ],
+            alignment: docx.AlignmentType.RIGHT,
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `Invoice #${header.number}`, bold: true }),
+            ],
+            alignment: docx.AlignmentType.RIGHT,
+          }),
+          new docx.Paragraph({ text: `Date: ${header.date}`, alignment: docx.AlignmentType.RIGHT }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Paragraph({ children: [new docx.TextRun({ text: sender.company, bold: true, size: 28 })] }),
+          new docx.Paragraph({ text: sender.person }),
+          new docx.Paragraph({ text: sender.address1 }),
+          new docx.Paragraph({ text: sender.address2 }),
+          new docx.Paragraph({ text: `Phone: ${sender.phone}` }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Paragraph({ children: [new docx.TextRun({ text: "Bill To:", bold: true })] }),
+          new docx.Paragraph({ children: [new docx.TextRun({ text: recipient.company, bold: true })] }),
+          new docx.Paragraph({ text: recipient.address1 }),
+          new docx.Paragraph({ text: recipient.address2 }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Table({
+            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+            rows: [
+              new docx.TableRow({
+                children: [
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "S.No", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Description", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Qty", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Price", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Total", bold: true })] }),
+                ],
+              }),
+              ...items.map((item, i) => new docx.TableRow({
+                children: [
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: (i + 1).toString() })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: item.desc })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: item.qty.toString() })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: formatNumber(item.rate) })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: formatNumber(getItemAmount(item)) })] }),
+                ],
+              })),
+            ],
+          }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `Total: ${formatNumber(grandTotal)}`, bold: true, size: 24, color: "3b82f6" }),
+            ],
+            alignment: docx.AlignmentType.RIGHT,
+          }),
+        ],
+      }],
     });
-    docx.Packer.toBlob(doc).then(blob => FileSaver.saveAs(blob, `Invoice.docx`));
+
+    docx.Packer.toBlob(doc).then(blob => {
+      FileSaver.saveAs(blob, `Invoice-${header.number}.docx`);
+    });
   };
 
   return (
@@ -641,8 +702,626 @@ export const InvoiceGenerator: React.FC = () => {
 };
 
 // ==========================================
-// 2. DELIVERY CHALLAN GENERATOR
+// 4. QUOTATION GENERATOR
 // ==========================================
+export const QuotationGenerator: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [currencySymbol, setCurrencySymbol] = useState('');
+  const [taxRate, setTaxRate] = useState(0);
+  const [stampImage, setStampImage] = useState<string | null>(null);
+
+  const [header, setHeader] = useState({
+    title: 'QUOTATION',
+    number: 'QT-121054',
+    date: new Date().toISOString().split('T')[0],
+    validity: '30 Days',
+    ntn: '3379147-3',
+    forLabel: 'Office Material',
+    poNumber: ''
+  });
+  
+  const [sender, setSender] = useState({
+    company: 'H & H Emporium',
+    person: 'Tayyab Memon',
+    address1: 'Al Khayam Arcade Nursery',
+    address2: 'Karachi, Pakistan',
+    phone: '03452430044'
+  });
+
+  const [recipient, setRecipient] = useState({
+    header: 'DP World',
+    company: 'Qasim International Container Terminal Pakistan Ltd',
+    address1: 'Berth 5 - 10 Marginal Wharves, port Muhammad Bin Qasim',
+    address2: 'P.O Box 6425 Karachi- 75020 Pakistan',
+    contact: 'UAN + 92 (21) 111786888, tell: +92 (21) 34739100'
+  });
+
+  const [items, setItems] = useState<InvoiceItem[]>([
+    { 
+      id: '1', 
+      code: 'MATERIAL', 
+      desc: 'Wooden Cupboard with Installation. Dimension of cupboard is 6ftx6ftx1.5ft. Cupboard required to have a total of 12 cabinet, 6 above, 6 below similar as attached picture', 
+      qty: 1, 
+      rate: 86500,
+      amount: 86500
+    }
+  ]);
+
+  const [terms, setTerms] = useState('1. Prices are inclusive of all taxes.\n2. Delivery within 7-10 working days.\n3. Validity: 30 days from the date of quotation.\n4. Payment: 50% advance, 50% on delivery.');
+
+  const getItemAmount = (item: InvoiceItem) => {
+    return item.amount !== undefined ? item.amount : (item.qty * item.rate);
+  };
+
+  const subtotal = items.reduce((sum, item) => sum + getItemAmount(item), 0);
+  const taxAmount = (subtotal * taxRate) / 100;
+  const grandTotal = subtotal + taxAmount;
+
+  const formatNumber = (num: number) => {
+    const formatted = num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return currencySymbol ? `${currencySymbol}${formatted}` : formatted;
+  };
+
+  const handleStampUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if(ev.target?.result) setStampImage(ev.target.result as string);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const saveQuotationData = () => {
+    const data = { header, sender, recipient, items, taxRate, currencySymbol, stampImage, terms };
+    localStorage.setItem('nextool_quotation_data', JSON.stringify(data));
+    alert('Quotation draft saved successfully!');
+  };
+
+  const loadQuotationData = () => {
+    const saved = localStorage.getItem('nextool_quotation_data');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if(data.header) setHeader(data.header);
+        if(data.sender) setSender(data.sender);
+        if(data.recipient) setRecipient(data.recipient);
+        if(data.items) setItems(data.items);
+        if(data.taxRate !== undefined) setTaxRate(data.taxRate);
+        if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
+        if(data.stampImage) setStampImage(data.stampImage);
+        if(data.terms) setTerms(data.terms);
+      } catch (e) { alert('Failed to load saved data.'); }
+    } else { alert('No saved draft found.'); }
+  };
+
+  const generateNextNumber = () => {
+    const current = header.number;
+    const match = current.match(/^(.*?)(\d+)$/);
+    if (match) {
+      const prefix = match[1];
+      const numStr = match[2];
+      const nextNum = parseInt(numStr) + 1;
+      const paddedNum = nextNum.toString().padStart(numStr.length, '0');
+      setHeader({ ...header, number: `${prefix}${paddedNum}` });
+    } else {
+      setHeader({ ...header, number: `${current}-1` });
+    }
+  };
+
+  const addItem = () => setItems([...items, { id: Date.now().toString(), code: '', desc: '', qty: 1, rate: 0, amount: 0 }]);
+  const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
+  
+  const updateItem = (id: string, field: keyof InvoiceItem, val: string | number) => {
+    setItems(items.map(i => {
+      if (i.id !== id) return i;
+      const newItem = { ...i, [field]: val };
+      if (field === 'qty' || field === 'rate') {
+        const q = field === 'qty' ? Number(val) : i.qty;
+        const r = field === 'rate' ? Number(val) : i.rate;
+        newItem.amount = q * r;
+      }
+      return newItem;
+    }));
+  };
+
+  const downloadPdf = () => {
+    const doc = new jsPDF();
+    const rightX = 195;
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    doc.setTextColor(59, 130, 246);
+    doc.text(header.title, rightX, 20, { align: 'right' });
+
+    doc.setFontSize(10);
+    let yPos = 30;
+    const addHeaderLine = (label: string, val: string, isBlueLabel = false, isBlueVal = false) => {
+      if(!val) return;
+      const valWidth = doc.getTextWidth(` ${val}`);
+      doc.setFont("helvetica", "bold");
+      if(isBlueLabel) doc.setTextColor(59, 130, 246); else doc.setTextColor(0);
+      doc.text(label, rightX - valWidth, yPos, { align: 'right' });
+      if(isBlueVal) doc.setTextColor(59, 130, 246); else doc.setTextColor(80);
+      doc.setFont("helvetica", "normal");
+      doc.text(` ${val}`, rightX, yPos, { align: 'right' });
+      yPos += 6;
+    };
+
+    addHeaderLine("QUOTATION", `#${header.number}`, true, false);
+    addHeaderLine("DATE", header.date, true, false);
+    addHeaderLine("VALIDITY", header.validity, true, false);
+    addHeaderLine("NTN", header.ntn, false, false);
+    if(header.forLabel) {
+       doc.setFont("helvetica", "bold");
+       doc.setTextColor(59, 130, 246);
+       doc.text("FOR", rightX - doc.getTextWidth(` ${header.forLabel}`), yPos, { align: 'right' });
+       doc.setTextColor(0);
+       doc.text(` ${header.forLabel}`, rightX, yPos, { align: 'right' });
+       yPos += 6;
+    }
+
+    doc.setTextColor(80);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text(sender.company, 14, 50);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    let leftY = 56;
+    doc.text(sender.person, 14, leftY); leftY += 5;
+    doc.text(sender.address1, 14, leftY); leftY += 5;
+    doc.text(sender.address2, 14, leftY); leftY += 5;
+    doc.text(`Phone ${sender.phone}`, 14, leftY); leftY += 10;
+
+    if(recipient.header) {
+      doc.setFont("helvetica", "normal");
+      doc.text(recipient.header, 14, leftY); leftY += 5;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.text(recipient.company, 14, leftY); 
+    const textWidth = doc.getTextWidth(recipient.company);
+    doc.line(14, leftY + 1, 14 + textWidth, leftY + 1);
+    leftY += 5;
+    doc.setFont("helvetica", "normal");
+    const splitAddress = doc.splitTextToSize(recipient.address1, 100);
+    doc.text(splitAddress, 14, leftY);
+    leftY += (splitAddress.length * 5);
+    doc.text(recipient.address2, 14, leftY); leftY += 5;
+    doc.text(recipient.contact, 14, leftY);
+
+    const tableStartY = Math.max(leftY + 10, yPos + 10);
+    autoTable(doc, {
+      startY: tableStartY,
+      head: [['S. No', 'Item Code', 'Description', 'Qty', 'Unit Price', 'Amount', 'Total Amount']],
+      body: items.map((item, index) => {
+        const amt = getItemAmount(item);
+        return [
+          index + 1, item.code, item.desc, item.qty, formatNumber(item.rate),
+          formatNumber(amt), formatNumber(amt)
+        ];
+      }),
+      theme: 'plain',
+      styles: { fontSize: 9, cellPadding: 3, textColor: 0, valign: 'top' },
+      headStyles: { fillColor: false, textColor: [59, 130, 246], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 15, halign: 'center' },
+        4: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' }, 6: { halign: 'right' }
+      },
+      didDrawPage: (data) => {
+          const tableY = data.settings.startY;
+          doc.setDrawColor(200, 220, 255);
+          doc.line(14, tableY, 195, tableY);
+          doc.line(14, tableY + 8, 195, tableY + 8);
+      }
+    });
+
+    const tableEnd = (doc as any).lastAutoTable?.finalY || tableStartY + 20;
+    let finalY = tableEnd + 10;
+    const startTotalX = 140;
+    const endTotalX = 195;
+    doc.setDrawColor(200);
+    doc.line(14, tableEnd, 195, tableEnd);
+
+    const addTotalLine = (label: string, val: string, isBold = false) => {
+        doc.setFont("helvetica", isBold ? "bold" : "normal");
+        doc.setTextColor(isBold ? 0 : 80);
+        doc.text(label, startTotalX, finalY);
+        doc.text(val, endTotalX, finalY, { align: 'right' });
+        finalY += 6;
+    };
+
+    if (items.length > 0) {
+        addTotalLine("Subtotal:", formatNumber(subtotal));
+        if (taxRate > 0) {
+            addTotalLine(`Tax (${taxRate}%):`, formatNumber(taxAmount));
+        }
+        finalY += 2;
+        doc.setFontSize(11);
+        doc.setTextColor(59, 130, 246);
+        addTotalLine("Grand Total:", formatNumber(grandTotal), true);
+    }
+
+    finalY += 10;
+    if (terms) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(59, 130, 246);
+      doc.text("Terms & Conditions:", 14, finalY);
+      finalY += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80);
+      const splitTerms = doc.splitTextToSize(terms, 180);
+      doc.text(splitTerms, 14, finalY);
+      finalY += (splitTerms.length * 5);
+    }
+
+    finalY += 10;
+    const signX = 140;
+    if (finalY > doc.internal.pageSize.height - 40) {
+      doc.addPage();
+      finalY = 30;
+    }
+    if (stampImage) {
+      try { doc.addImage(stampImage, 'PNG', signX, finalY, 40, 25); } catch (e) {}
+    }
+    doc.setDrawColor(150);
+    doc.line(signX, finalY + 30, signX + 50, finalY + 30);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(80);
+    doc.text("Stamp & Sign", signX + 10, finalY + 36);
+    
+    const blob = doc.output('blob');
+    FileSaver.saveAs(blob, `Quotation-${header.number}.pdf`);
+  };
+
+  const downloadDocx = () => {
+    const doc = new docx.Document({
+      sections: [{
+        children: [
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: header.title, bold: true, size: 48, color: "3b82f6" }),
+            ],
+            alignment: docx.AlignmentType.RIGHT,
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `Quotation #${header.number}`, bold: true }),
+            ],
+            alignment: docx.AlignmentType.RIGHT,
+          }),
+          new docx.Paragraph({ text: `Date: ${header.date}`, alignment: docx.AlignmentType.RIGHT }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Paragraph({ children: [new docx.TextRun({ text: sender.company, bold: true, size: 28 })] }),
+          new docx.Paragraph({ text: sender.person }),
+          new docx.Paragraph({ text: sender.address1 }),
+          new docx.Paragraph({ text: sender.address2 }),
+          new docx.Paragraph({ text: `Phone: ${sender.phone}` }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Paragraph({ children: [new docx.TextRun({ text: "To:", bold: true })] }),
+          new docx.Paragraph({ children: [new docx.TextRun({ text: recipient.company, bold: true })] }),
+          new docx.Paragraph({ text: recipient.address1 }),
+          new docx.Paragraph({ text: recipient.address2 }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Table({
+            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+            rows: [
+              new docx.TableRow({
+                children: [
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "S.No", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Description", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Qty", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Price", bold: true })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: "Total", bold: true })] }),
+                ],
+              }),
+              ...items.map((item, i) => new docx.TableRow({
+                children: [
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: (i + 1).toString() })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: item.desc })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: item.qty.toString() })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: formatNumber(item.rate) })] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ text: formatNumber(getItemAmount(item)) })] }),
+                ],
+              })),
+            ],
+          }),
+          new docx.Paragraph({ text: "" }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `Grand Total: ${formatNumber(grandTotal)}`, bold: true, size: 24, color: "3b82f6" }),
+            ],
+            alignment: docx.AlignmentType.RIGHT,
+          }),
+        ],
+      }],
+    });
+
+    docx.Packer.toBlob(doc).then(blob => {
+      FileSaver.saveAs(blob, `Quotation-${header.number}.docx`);
+    });
+  };
+
+  return (
+    <div>
+      <MobileTabSwitcher active={activeTab} onChange={setActiveTab} />
+
+      <div className="grid xl:grid-cols-5 gap-8 items-start">
+        
+        {/* --- Editor Panel --- */}
+        <div className={`xl:col-span-2 space-y-6 ${activeTab === 'edit' ? 'block' : 'hidden xl:block'}`}>
+           
+           {/* Actions Toolbar */}
+           <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm sticky top-[90px] xl:top-0 z-20 flex flex-wrap gap-2">
+              <Button onClick={saveQuotationData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Save">
+                 <Save className="w-4 h-4 mr-1" /> Save
+              </Button>
+              <Button onClick={loadQuotationData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Load">
+                 <FolderOpen className="w-4 h-4 mr-1" /> Load
+              </Button>
+              <Button onClick={downloadPdf} className="flex-1 min-w-[80px] bg-red-600 hover:bg-red-700 text-white border-0">
+                 <Download className="w-4 h-4 mr-1" /> PDF
+              </Button>
+              <Button onClick={downloadDocx} className="flex-1 min-w-[80px] bg-blue-700 hover:bg-blue-800 text-white border-0">
+                 <FileText className="w-4 h-4 mr-1" /> DOCX
+              </Button>
+           </div>
+
+           {/* Settings */}
+           <div className="bg-blue-50 dark:bg-slate-900 p-5 rounded-2xl border border-blue-100 dark:border-slate-800">
+              <h3 className="font-bold text-blue-800 dark:text-blue-400 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5" /> Global Settings
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="text-xs font-bold text-blue-600 dark:text-slate-400 mb-2 block uppercase tracking-wide">Currency</label>
+                    <div className="flex items-center bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-slate-700 overflow-hidden focus-within:ring-2 ring-blue-500">
+                      <span className="pl-3 pr-2 text-gray-400"><DollarSign className="w-4 h-4"/></span>
+                      <input className="w-full p-3 text-sm outline-none bg-transparent dark:text-white" value={currencySymbol} onChange={e=>setCurrencySymbol(e.target.value)} placeholder="e.g. $" />
+                    </div>
+                 </div>
+                 <div>
+                    <label className="text-xs font-bold text-blue-600 dark:text-slate-400 mb-2 block uppercase tracking-wide">Tax Rate %</label>
+                    <input type="number" className={inputClasses} value={taxRate} onChange={e=>setTaxRate(Number(e.target.value))} />
+                 </div>
+              </div>
+           </div>
+
+           {/* Quotation Info */}
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">
+                <h3 className="font-bold text-gray-800 dark:text-slate-100">Quotation Info</h3>
+                <Button size="sm" variant="outline" onClick={generateNextNumber} className="text-xs px-3 py-1 h-8">
+                  <Hash className="w-3 h-3 mr-1 inline" /> Next #
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Quotation #</label><input className={inputClasses} value={header.number} onChange={e=>setHeader({...header, number: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Date</label><input type="date" className={inputClasses} value={header.date} onChange={e=>setHeader({...header, date: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">Validity</label><input className={inputClasses} value={header.validity} onChange={e=>setHeader({...header, validity: e.target.value})} /></div>
+                 <div><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">NTN / Tax ID</label><input className={inputClasses} value={header.ntn} onChange={e=>setHeader({...header, ntn: e.target.value})} /></div>
+                 <div className="md:col-span-2"><label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1 block">FOR (Project)</label><input className={inputClasses} value={header.forLabel} onChange={e=>setHeader({...header, forLabel: e.target.value})} /></div>
+              </div>
+           </div>
+
+           {/* Sender */}
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">From (Sender)</h3>
+              <div className="space-y-3">
+                 <input className={inputClasses + " font-bold"} placeholder="Company Name" value={sender.company} onChange={e=>setSender({...sender, company: e.target.value})} />
+                 <input className={inputClasses} placeholder="Person Name" value={sender.person} onChange={e=>setSender({...sender, person: e.target.value})} />
+                 <input className={inputClasses} placeholder="Address L1" value={sender.address1} onChange={e=>setSender({...sender, address1: e.target.value})} />
+                 <input className={inputClasses} placeholder="Address L2" value={sender.address2} onChange={e=>setSender({...sender, address2: e.target.value})} />
+                 <input className={inputClasses} placeholder="Phone" value={sender.phone} onChange={e=>setSender({...sender, phone: e.target.value})} />
+              </div>
+           </div>
+
+           {/* Recipient */}
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">To (Recipient)</h3>
+              <div className="space-y-3">
+                 <input className={inputClasses} placeholder="Header (e.g. DP World)" value={recipient.header} onChange={e=>setRecipient({...recipient, header: e.target.value})} />
+                 <input className={inputClasses + " font-bold"} placeholder="Company Name" value={recipient.company} onChange={e=>setRecipient({...recipient, company: e.target.value})} />
+                 <input className={inputClasses} placeholder="Address L1" value={recipient.address1} onChange={e=>setRecipient({...recipient, address1: e.target.value})} />
+                 <input className={inputClasses} placeholder="Address L2" value={recipient.address2} onChange={e=>setRecipient({...recipient, address2: e.target.value})} />
+                 <input className={inputClasses} placeholder="Contact Info" value={recipient.contact} onChange={e=>setRecipient({...recipient, contact: e.target.value})} />
+              </div>
+           </div>
+
+           {/* Items */}
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Line Items</h3>
+              <div className="space-y-6">
+                {items.map((item, i) => (
+                  <div key={item.id} className="relative p-4 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800 group">
+                     <div className="flex justify-between items-center mb-3">
+                        <span className="font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">Item {i + 1}</span>
+                        <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-4 h-4"/></button>
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <div className="col-span-1 md:col-span-3">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Code</label>
+                           <input className={inputClasses + " p-2 text-sm"} value={item.code} onChange={e=>updateItem(item.id, 'code', e.target.value)} />
+                        </div>
+                        <div className="col-span-1 md:col-span-2">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Qty</label>
+                           <input className={inputClasses + " p-2 text-sm"} type="number" value={item.qty} onChange={e=>updateItem(item.id, 'qty', Number(e.target.value))} />
+                        </div>
+                        <div className="col-span-1 md:col-span-3">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Unit Price</label>
+                           <input className={inputClasses + " p-2 text-sm"} type="number" value={item.rate} onChange={e=>updateItem(item.id, 'rate', Number(e.target.value))} />
+                        </div>
+                        <div className="col-span-1 md:col-span-4">
+                           <label className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1 block uppercase">Total Amount</label>
+                           <input 
+                             type="number" 
+                             className={inputClasses + " p-2 text-sm bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold font-mono"} 
+                             value={item.amount !== undefined ? item.amount : (item.qty * item.rate)} 
+                             onChange={e=>updateItem(item.id, 'amount', Number(e.target.value))} 
+                           />
+                        </div>
+                        <div className="col-span-1 md:col-span-12">
+                           <label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-1 block uppercase">Description</label>
+                           <TextArea 
+                             className="min-h-[80px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white" 
+                             rows={2} 
+                             value={item.desc} 
+                             onChange={e=>updateItem(item.id, 'desc', e.target.value)} 
+                           />
+                        </div>
+                     </div>
+                  </div>
+                ))}
+                <Button variant="outline" className="w-full border-dashed" onClick={addItem}>
+                  <Plus className="w-4 h-4 mr-2" /> Add New Item
+                </Button>
+              </div>
+           </div>
+
+           {/* Terms */}
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Terms & Conditions</h3>
+              <TextArea 
+                className="min-h-[120px]" 
+                value={terms} 
+                onChange={e=>setTerms(e.target.value)} 
+                placeholder="Enter terms and conditions..."
+              />
+           </div>
+
+           {/* Stamp */}
+           <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-gray-800 dark:text-slate-100 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">Stamp & Signature</h3>
+              <div className="flex flex-col gap-4">
+                <label className="cursor-pointer bg-gray-50 dark:bg-slate-950 hover:bg-gray-100 dark:hover:bg-slate-900 transition-colors border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center text-gray-500 dark:text-slate-400">
+                   <Upload className="w-8 h-8 mb-2 text-gray-400"/> 
+                   <span className="text-sm font-medium">Click to upload image</span>
+                   <input type="file" accept="image/*" className="hidden" onChange={handleStampUpload} />
+                </label>
+                {stampImage && (
+                  <div className="relative w-fit group">
+                    <img src={stampImage} alt="Stamp" className="h-20 object-contain border dark:border-slate-700 rounded bg-white p-2" />
+                    <button onClick={() => setStampImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"><Trash2 className="w-3 h-3"/></button>
+                  </div>
+                )}
+              </div>
+           </div>
+        </div>
+
+        {/* --- Preview Panel --- */}
+        <div className={`xl:col-span-3 ${activeTab === 'preview' ? 'block' : 'hidden xl:block'}`}>
+           <PreviewScaler>
+             <div className="w-[210mm] min-h-[297mm] p-[10mm] relative text-gray-900 leading-tight bg-white">
+                
+                {/* Header Right */}
+                <div className="absolute top-[10mm] right-[10mm] text-right">
+                   <h1 className="text-4xl font-bold text-blue-500 mb-2">{header.title}</h1>
+                   <div className="space-y-1.5 text-sm">
+                      <div className="font-bold text-blue-500">QUOTATION <span className="text-gray-800 font-normal">#{header.number}</span></div>
+                      <div className="font-bold text-blue-500">DATE <span className="text-gray-800 font-normal">{header.date}</span></div>
+                      <div className="font-bold text-blue-500">VALIDITY <span className="text-gray-800 font-normal">{header.validity}</span></div>
+                      <div className="font-normal text-gray-800">NTN {header.ntn}</div>
+                      {header.forLabel && <div className="font-bold text-blue-500">FOR <span className="text-gray-800 font-normal">{header.forLabel}</span></div>}
+                   </div>
+                </div>
+
+                {/* Sender Left */}
+                <div className="mt-8 mb-8">
+                   <h2 className="text-xl font-bold text-gray-700 mb-2">{sender.company}</h2>
+                   <div className="text-sm text-gray-800 space-y-1">
+                      <p className="font-medium">{sender.person}</p>
+                      <p>{sender.address1}</p>
+                      <p>{sender.address2}</p>
+                      <p className="mt-1">Phone {sender.phone}</p>
+                   </div>
+                </div>
+
+                {/* Recipient Left */}
+                <div className="mb-10 max-w-[60%]">
+                   {recipient.header && <p className="text-sm font-normal mb-1">{recipient.header}</p>}
+                   <h3 className="text-sm font-bold underline decoration-2 decoration-gray-800 mb-2">{recipient.company}</h3>
+                   <div className="text-sm text-gray-800 space-y-1">
+                      <p>{recipient.address1}</p>
+                      <p>{recipient.address2}</p>
+                      <p>{recipient.contact}</p>
+                   </div>
+                </div>
+
+                {/* Items Table */}
+                <table className="w-full text-sm mb-6">
+                   <thead>
+                      <tr className="border-t border-b border-blue-200">
+                         <th className="py-2 text-blue-500 text-center w-12 font-bold">S. No</th>
+                         <th className="py-2 text-blue-500 text-left w-24 font-bold">Item Code</th>
+                         <th className="py-2 text-blue-500 text-left font-bold">Description</th>
+                         <th className="py-2 text-blue-500 text-center w-16 font-bold">Qty</th>
+                         <th className="py-2 text-blue-500 text-right w-28 whitespace-nowrap font-bold">Unit Price</th>
+                         <th className="py-2 text-blue-500 text-right w-32 whitespace-nowrap font-bold">Total Amount</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-gray-100">
+                      {items.map((item, i) => (
+                         <tr key={item.id} className="align-top">
+                            <td className="py-3 text-center text-gray-500">{i + 1}</td>
+                            <td className="py-3 font-bold text-gray-700">{item.code}</td>
+                            <td className="py-3 pr-4 text-gray-600 leading-snug whitespace-pre-wrap">{item.desc}</td>
+                            <td className="py-3 text-center">{item.qty}</td>
+                            <td className="py-3 text-right text-gray-600">{formatNumber(item.rate)}</td>
+                            <td className="py-3 text-right text-gray-800">{formatNumber(getItemAmount(item))}</td>
+                         </tr>
+                      ))}
+                   </tbody>
+                </table>
+
+                {/* Totals Section */}
+                <div className="flex justify-end mb-8 border-t pt-4">
+                   <div className="w-64 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                         <span className="text-gray-600 font-medium">Subtotal</span>
+                         <span className="text-gray-800 text-right">{formatNumber(subtotal)}</span>
+                      </div>
+                      {taxRate > 0 && (
+                         <div className="flex justify-between">
+                            <span className="text-gray-600 font-medium">Tax ({taxRate}%)</span>
+                            <span className="text-gray-800 text-right">{formatNumber(taxAmount)}</span>
+                         </div>
+                      )}
+                      <div className="flex justify-between font-bold text-lg text-blue-600 mt-2 pt-2 border-t border-gray-100">
+                         <span>Grand Total</span>
+                         <span className="text-right">{formatNumber(grandTotal)}</span>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Terms Section */}
+                {terms && (
+                  <div className="mb-12">
+                     <h4 className="text-sm font-bold text-blue-500 mb-2">Terms & Conditions:</h4>
+                     <div className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
+                        {terms}
+                     </div>
+                  </div>
+                )}
+
+                {/* Footer / Stamp */}
+                <div className="absolute bottom-[20mm] right-[20mm] w-48 text-center">
+                   {stampImage && (
+                      <img src={stampImage} className="h-16 w-auto mx-auto mb-2 object-contain" alt="Stamp" />
+                   )}
+                   <div className="border-t border-gray-400 pt-2 text-gray-500 text-sm font-medium">Stamp & Sign</div>
+                </div>
+
+             </div>
+           </PreviewScaler>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 export const DeliveryChallanGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [header, setHeader] = useState({ title: 'DELIVERY CHALLAN', number: 'DC-001', date: new Date().toISOString().split('T')[0], poNumber: '' });

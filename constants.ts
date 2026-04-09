@@ -5,6 +5,7 @@ export const APP_DESCRIPTION = "Next-gen free online tools for developers, stude
 
 export const CATEGORIES: Category[] = [
   'Business',
+  'Education',
   'Text',
   'Image',
   'Developer',
