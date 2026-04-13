@@ -7,7 +7,18 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Lazy initialization of Gemini AI to prevent crash if key is missing
+let aiInstance: GoogleGenAI | null = null;
+const getAI = () => {
+  if (!aiInstance) {
+    const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 // --- Shared Interfaces ---
 interface InvoiceItem {
@@ -1092,6 +1103,7 @@ export const QuotationGenerator: React.FC = () => {
         reader.readAsDataURL(file);
         const base64Data = await base64Promise;
 
+        const ai = getAI();
         const response = await ai.models.generateContent({
           model: "gemini-3.1-pro-preview",
           contents: [
