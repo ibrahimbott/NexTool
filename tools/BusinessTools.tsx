@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, TextArea, inputClasses } from '../components/UI';
-import { Plus, Trash2, Download, FileText, Save, Upload, RotateCcw, Settings, Hash, DollarSign, FolderOpen, Truck, Eye, Edit3, Image as ImageIcon, CreditCard, Banknote, User, Building } from 'lucide-react';
+import { Plus, Trash2, Download, FileText, Save, Upload, RotateCcw, Settings, Hash, DollarSign, FolderOpen, Truck, Eye, Edit3, Image as ImageIcon, CreditCard, Banknote, User, Building, FileUp, Loader2 } from 'lucide-react';
 import * as docx from 'docx';
 import FileSaver from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { GoogleGenAI, Type } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // --- Shared Interfaces ---
 interface InvoiceItem {
@@ -709,6 +712,7 @@ export const QuotationGenerator: React.FC = () => {
   const [currencySymbol, setCurrencySymbol] = useState('');
   const [taxRate, setTaxRate] = useState(0);
   const [stampImage, setStampImage] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const [header, setHeader] = useState({
     title: 'QUOTATION',
@@ -1044,6 +1048,144 @@ export const QuotationGenerator: React.FC = () => {
     });
   };
 
+  const exportToJSON = () => {
+    const data = { header, sender, recipient, items, taxRate, currencySymbol, terms };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    FileSaver.saveAs(blob, `Quotation-Data-${header.number}.json`);
+  };
+
+  const importFromJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target?.result as string);
+          if(data.header) setHeader(data.header);
+          if(data.sender) setSender(data.sender);
+          if(data.recipient) setRecipient(data.recipient);
+          if(data.items) setItems(data.items);
+          if(data.taxRate !== undefined) setTaxRate(data.taxRate);
+          if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
+          if(data.terms) setTerms(data.terms);
+          alert('Quotation data imported successfully!');
+        } catch (err) {
+          alert('Failed to parse the quotation file. Please ensure it is a valid JSON file.');
+        }
+      };
+      reader.readAsText(e.target.files[0]);
+    }
+  };
+
+  const importFromPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setIsImporting(true);
+      
+      try {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onload = () => {
+            const base64 = (reader.result as string).split(',')[1];
+            resolve(base64);
+          };
+        });
+        reader.readAsDataURL(file);
+        const base64Data = await base64Promise;
+
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-pro-preview",
+          contents: [
+            {
+              inlineData: {
+                mimeType: "application/pdf",
+                data: base64Data
+              }
+            },
+            {
+              text: "Extract all details from this quotation PDF into the specified JSON format. Ensure all items, prices, company details, and terms are accurately captured. If a field is missing, use an empty string or 0 as appropriate."
+            }
+          ],
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                header: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    number: { type: Type.STRING },
+                    date: { type: Type.STRING },
+                    validity: { type: Type.STRING },
+                    ntn: { type: Type.STRING },
+                    forLabel: { type: Type.STRING },
+                  }
+                },
+                sender: {
+                  type: Type.OBJECT,
+                  properties: {
+                    company: { type: Type.STRING },
+                    person: { type: Type.STRING },
+                    address1: { type: Type.STRING },
+                    address2: { type: Type.STRING },
+                    phone: { type: Type.STRING },
+                  }
+                },
+                recipient: {
+                  type: Type.OBJECT,
+                  properties: {
+                    header: { type: Type.STRING },
+                    company: { type: Type.STRING },
+                    address1: { type: Type.STRING },
+                    address2: { type: Type.STRING },
+                    contact: { type: Type.STRING },
+                  }
+                },
+                items: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      code: { type: Type.STRING },
+                      desc: { type: Type.STRING },
+                      qty: { type: Type.NUMBER },
+                      rate: { type: Type.NUMBER },
+                      amount: { type: Type.NUMBER },
+                    }
+                  }
+                },
+                terms: { type: Type.STRING },
+                taxRate: { type: Type.NUMBER },
+                currencySymbol: { type: Type.STRING },
+              }
+            }
+          }
+        });
+
+        const data = JSON.parse(response.text);
+        if(data.header) setHeader(prev => ({ ...prev, ...data.header }));
+        if(data.sender) setSender(prev => ({ ...prev, ...data.sender }));
+        if(data.recipient) setRecipient(prev => ({ ...prev, ...data.recipient }));
+        if(data.items) {
+          setItems(data.items.map((item: any) => ({
+            ...item,
+            id: Math.random().toString(36).substr(2, 9)
+          })));
+        }
+        if(data.taxRate !== undefined) setTaxRate(data.taxRate);
+        if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
+        if(data.terms) setTerms(data.terms);
+        
+        alert('Quotation PDF imported and fields populated successfully!');
+      } catch (err) {
+        console.error('PDF Import Error:', err);
+        alert('Failed to import PDF. Please make sure it is a valid quotation PDF.');
+      } finally {
+        setIsImporting(false);
+      }
+    }
+  };
+
   return (
     <div>
       <MobileTabSwitcher active={activeTab} onChange={setActiveTab} />
@@ -1055,12 +1197,28 @@ export const QuotationGenerator: React.FC = () => {
            
            {/* Actions Toolbar */}
            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm sticky top-[90px] xl:top-0 z-20 flex flex-wrap gap-2">
-              <Button onClick={saveQuotationData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Save">
+              <Button onClick={saveQuotationData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Save to Browser">
                  <Save className="w-4 h-4 mr-1" /> Save
               </Button>
-              <Button onClick={loadQuotationData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Load">
+              <Button onClick={loadQuotationData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Load from Browser">
                  <FolderOpen className="w-4 h-4 mr-1" /> Load
               </Button>
+              <Button onClick={exportToJSON} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Export Data File">
+                 <Download className="w-4 h-4 mr-1 text-green-600" /> Export
+              </Button>
+              <label className="flex-1 min-w-[80px]">
+                 <input type="file" accept=".json" className="hidden" onChange={importFromJSON} />
+                 <div className="flex items-center justify-center h-9 px-3 rounded-lg border border-gray-200 dark:border-slate-800 text-sm font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                   <Upload className="w-4 h-4 mr-1 text-blue-600" /> Import JSON
+                 </div>
+              </label>
+              <label className="flex-1 min-w-[80px]">
+                 <input type="file" accept=".pdf" className="hidden" onChange={importFromPDF} disabled={isImporting} />
+                 <div className={`flex items-center justify-center h-9 px-3 rounded-lg border border-gray-200 dark:border-slate-800 text-sm font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${isImporting ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                   {isImporting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <FileUp className="w-4 h-4 mr-1 text-red-600" />}
+                   {isImporting ? 'Importing...' : 'Import PDF'}
+                 </div>
+              </label>
               <Button onClick={downloadPdf} className="flex-1 min-w-[80px] bg-red-600 hover:bg-red-700 text-white border-0">
                  <Download className="w-4 h-4 mr-1" /> PDF
               </Button>
