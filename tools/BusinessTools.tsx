@@ -108,6 +108,7 @@ export const InvoiceGenerator: React.FC = () => {
   const [taxRate, setTaxRate] = useState(0);
   const [advance, setAdvance] = useState(0);
   const [stampImage, setStampImage] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const [header, setHeader] = useState({
     title: 'INVOICE',
@@ -173,7 +174,6 @@ export const InvoiceGenerator: React.FC = () => {
   const saveInvoiceData = () => {
     const data = { header, sender, recipient, items, taxRate, advance, currencySymbol, stampImage };
     localStorage.setItem('nextool_invoice_data', JSON.stringify(data));
-    alert('Invoice draft saved successfully!');
   };
 
   const loadInvoiceData = () => {
@@ -189,8 +189,8 @@ export const InvoiceGenerator: React.FC = () => {
         if(data.advance !== undefined) setAdvance(data.advance);
         if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
         if(data.stampImage) setStampImage(data.stampImage);
-      } catch (e) { alert('Failed to load saved data.'); }
-    } else { alert('No saved draft found.'); }
+      } catch (e) { console.error('Failed to load saved data.'); }
+    }
   };
 
   const generateNextNumber = () => {
@@ -308,14 +308,21 @@ export const InvoiceGenerator: React.FC = () => {
       styles: { fontSize: 9, cellPadding: 3, textColor: 0, valign: 'top' },
       headStyles: { fillColor: false, textColor: [59, 130, 246], fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 15, halign: 'center' },
-        4: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' }, 6: { halign: 'right' }
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 'auto' },
+        3: { cellWidth: 12, halign: 'center' },
+        4: { cellWidth: 25, halign: 'right' },
+        5: { cellWidth: 25, halign: 'right', fontStyle: 'bold' },
+        6: { cellWidth: 25, halign: 'right' }
       },
-      didDrawPage: (data) => {
-          const tableY = data.settings.startY;
+      didDrawCell: (data) => {
+        if (data.section === 'head' && data.column.index === 0) {
           doc.setDrawColor(200, 220, 255);
-          doc.line(14, tableY, 195, tableY);
-          doc.line(14, tableY + 8, 195, tableY + 8);
+          doc.setLineWidth(0.3);
+          doc.line(14, data.cell.y, 195, data.cell.y);
+          doc.line(14, data.cell.y + data.cell.height, 195, data.cell.y + data.cell.height);
+        }
       }
     });
 
@@ -326,9 +333,13 @@ export const InvoiceGenerator: React.FC = () => {
     doc.setDrawColor(200);
     doc.line(14, tableEnd, 195, tableEnd);
 
-    const addTotalLine = (label: string, val: string, isBold = false) => {
+    const addTotalLine = (label: string, val: string, isBold = false, isThemeColor = false) => {
         doc.setFont("helvetica", isBold ? "bold" : "normal");
-        doc.setTextColor(isBold ? 0 : 80);
+        if (isThemeColor) {
+          doc.setTextColor(59, 130, 246);
+        } else {
+          doc.setTextColor(isBold ? 0 : 80);
+        }
         doc.text(label, startTotalX, finalY);
         doc.text(val, endTotalX, finalY, { align: 'right' });
         finalY += 6;
@@ -344,16 +355,20 @@ export const InvoiceGenerator: React.FC = () => {
         }
         finalY += 2;
         doc.setFontSize(11);
-        doc.setTextColor(59, 130, 246);
-        addTotalLine("Total:", formatNumber(grandTotal), true);
+        addTotalLine("Total:", formatNumber(grandTotal), true, true);
     }
 
-    finalY += 10;
-    const signX = 140;
-    if (finalY > doc.internal.pageSize.height - 40) {
+    // Adjust spacing to try and keep signature on the same page
+    const pageHeight = doc.internal.pageSize.height;
+    const signatureHeight = 45; 
+    
+    if (finalY + signatureHeight > pageHeight - 10) {
       doc.addPage();
-      finalY = 30;
+      finalY = 20;
+    } else {
+      finalY += 10;
     }
+    const signX = 140;
     if (stampImage) {
       try { doc.addImage(stampImage, 'PNG', signX, finalY, 40, 25); } catch (e) {}
     }
@@ -435,6 +450,144 @@ export const InvoiceGenerator: React.FC = () => {
     });
   };
 
+  const exportToJSON = () => {
+    const data = { header, sender, recipient, items, taxRate, advance, currencySymbol, stampImage };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    FileSaver.saveAs(blob, `Invoice-Data-${header.number}.json`);
+  };
+
+  const importFromJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target?.result as string);
+          if(data.header) setHeader({...data.header});
+          if(data.sender) setSender({...data.sender});
+          if(data.recipient) setRecipient({...data.recipient});
+          if(data.items) setItems([...data.items]);
+          if(data.taxRate !== undefined) setTaxRate(data.taxRate);
+          if(data.advance !== undefined) setAdvance(data.advance);
+          if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
+          if(data.stampImage) setStampImage(data.stampImage);
+        } catch (err) {
+          console.error('Failed to parse the invoice file.');
+        }
+      };
+      reader.readAsText(e.target.files[0]);
+      e.target.value = ''; // Reset to allow re-importing same file
+    }
+  };
+
+  const importFromPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setIsImporting(true);
+      
+      try {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onload = () => {
+            const base64 = (reader.result as string).split(',')[1];
+            resolve(base64);
+          };
+        });
+        reader.readAsDataURL(file);
+        const base64Data = await base64Promise;
+
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-pro-preview",
+          contents: [
+            {
+              inlineData: {
+                mimeType: "application/pdf",
+                data: base64Data
+              }
+            },
+            {
+              text: "Extract all details from this invoice PDF into the specified JSON format. Ensure all items, prices, company details, and totals are accurately captured. If a field is missing, use an empty string or 0 as appropriate."
+            }
+          ],
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                header: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    number: { type: Type.STRING },
+                    date: { type: Type.STRING },
+                    ntn: { type: Type.STRING },
+                    forLabel: { type: Type.STRING },
+                    poNumber: { type: Type.STRING },
+                  }
+                },
+                sender: {
+                  type: Type.OBJECT,
+                  properties: {
+                    company: { type: Type.STRING },
+                    person: { type: Type.STRING },
+                    address1: { type: Type.STRING },
+                    address2: { type: Type.STRING },
+                    phone: { type: Type.STRING },
+                  }
+                },
+                recipient: {
+                  type: Type.OBJECT,
+                  properties: {
+                    header: { type: Type.STRING },
+                    company: { type: Type.STRING },
+                    address1: { type: Type.STRING },
+                    address2: { type: Type.STRING },
+                    contact: { type: Type.STRING },
+                  }
+                },
+                items: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      code: { type: Type.STRING },
+                      desc: { type: Type.STRING },
+                      qty: { type: Type.NUMBER },
+                      rate: { type: Type.NUMBER },
+                      amount: { type: Type.NUMBER },
+                    }
+                  }
+                },
+                taxRate: { type: Type.NUMBER },
+                advance: { type: Type.NUMBER },
+                currencySymbol: { type: Type.STRING },
+              }
+            }
+          }
+        });
+
+        const data = JSON.parse(response.text);
+        if(data.header) setHeader(prev => ({ ...prev, ...data.header }));
+        if(data.sender) setSender(prev => ({ ...prev, ...data.sender }));
+        if(data.recipient) setRecipient(prev => ({ ...prev, ...data.recipient }));
+        if(data.items) {
+          setItems(data.items.map((item: any) => ({
+            ...item,
+            id: Math.random().toString(36).substr(2, 9)
+          })));
+        }
+        if(data.taxRate !== undefined) setTaxRate(data.taxRate);
+        if(data.advance !== undefined) setAdvance(data.advance);
+        if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
+      } catch (err) {
+        console.error('PDF Import Error:', err);
+      } finally {
+        setIsImporting(false);
+        e.target.value = ''; // Reset to allow re-importing same file
+      }
+    }
+  };
+
   return (
     <div>
       <MobileTabSwitcher active={activeTab} onChange={setActiveTab} />
@@ -446,12 +599,28 @@ export const InvoiceGenerator: React.FC = () => {
            
            {/* Actions Toolbar */}
            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm sticky top-[90px] xl:top-0 z-20 flex flex-wrap gap-2">
-              <Button onClick={saveInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Save">
+              <Button onClick={saveInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Save to Browser">
                  <Save className="w-4 h-4 mr-1" /> Save
               </Button>
-              <Button onClick={loadInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Load">
+              <Button onClick={loadInvoiceData} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Load from Browser">
                  <FolderOpen className="w-4 h-4 mr-1" /> Load
               </Button>
+              <Button onClick={exportToJSON} variant="outline" size="sm" className="flex-1 min-w-[80px]" title="Export Data File">
+                 <Download className="w-4 h-4 mr-1 text-green-600" /> Export
+              </Button>
+              <label className="flex-1 min-w-[80px]">
+                 <input type="file" accept=".json" className="hidden" onChange={importFromJSON} />
+                 <div className="flex items-center justify-center h-9 px-3 rounded-lg border border-gray-200 dark:border-slate-800 text-sm font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                   <Upload className="w-4 h-4 mr-1 text-blue-600" /> Import JSON
+                 </div>
+              </label>
+              <label className="flex-1 min-w-[80px]">
+                 <input type="file" accept=".pdf" className="hidden" onChange={importFromPDF} disabled={isImporting} />
+                 <div className={`flex items-center justify-center h-9 px-3 rounded-lg border border-gray-200 dark:border-slate-800 text-sm font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${isImporting ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                   {isImporting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <FileUp className="w-4 h-4 mr-1 text-red-600" />}
+                   {isImporting ? 'Importing...' : 'Import PDF'}
+                 </div>
+              </label>
               <Button onClick={downloadPdf} className="flex-1 min-w-[80px] bg-red-600 hover:bg-red-700 text-white border-0">
                  <Download className="w-4 h-4 mr-1" /> PDF
               </Button>
@@ -790,7 +959,6 @@ export const QuotationGenerator: React.FC = () => {
   const saveQuotationData = () => {
     const data = { header, sender, recipient, items, taxRate, currencySymbol, stampImage, terms };
     localStorage.setItem('nextool_quotation_data', JSON.stringify(data));
-    alert('Quotation draft saved successfully!');
   };
 
   const loadQuotationData = () => {
@@ -806,8 +974,8 @@ export const QuotationGenerator: React.FC = () => {
         if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
         if(data.stampImage) setStampImage(data.stampImage);
         if(data.terms) setTerms(data.terms);
-      } catch (e) { alert('Failed to load saved data.'); }
-    } else { alert('No saved draft found.'); }
+      } catch (e) { console.error('Failed to load saved data.'); }
+    }
   };
 
   const generateNextNumber = () => {
@@ -923,11 +1091,13 @@ export const QuotationGenerator: React.FC = () => {
         0: { cellWidth: 15, halign: 'center' },
         4: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' }, 6: { halign: 'right' }
       },
-      didDrawPage: (data) => {
-          const tableY = data.settings.startY;
+      didDrawCell: (data) => {
+        if (data.section === 'head' && data.column.index === 0) {
           doc.setDrawColor(200, 220, 255);
-          doc.line(14, tableY, 195, tableY);
-          doc.line(14, tableY + 8, 195, tableY + 8);
+          doc.setLineWidth(0.3);
+          doc.line(14, data.cell.y, 195, data.cell.y);
+          doc.line(14, data.cell.y + data.cell.height, 195, data.cell.y + data.cell.height);
+        }
       }
     });
 
@@ -938,9 +1108,13 @@ export const QuotationGenerator: React.FC = () => {
     doc.setDrawColor(200);
     doc.line(14, tableEnd, 195, tableEnd);
 
-    const addTotalLine = (label: string, val: string, isBold = false) => {
+    const addTotalLine = (label: string, val: string, isBold = false, isThemeColor = false) => {
         doc.setFont("helvetica", isBold ? "bold" : "normal");
-        doc.setTextColor(isBold ? 0 : 80);
+        if (isThemeColor) {
+          doc.setTextColor(59, 130, 246);
+        } else {
+          doc.setTextColor(isBold ? 0 : 80);
+        }
         doc.text(label, startTotalX, finalY);
         doc.text(val, endTotalX, finalY, { align: 'right' });
         finalY += 6;
@@ -953,8 +1127,7 @@ export const QuotationGenerator: React.FC = () => {
         }
         finalY += 2;
         doc.setFontSize(11);
-        doc.setTextColor(59, 130, 246);
-        addTotalLine("Grand Total:", formatNumber(grandTotal), true);
+        addTotalLine("Grand Total:", formatNumber(grandTotal), true, true);
     }
 
     finalY += 10;
@@ -971,12 +1144,17 @@ export const QuotationGenerator: React.FC = () => {
       finalY += (splitTerms.length * 5);
     }
 
-    finalY += 10;
-    const signX = 140;
-    if (finalY > doc.internal.pageSize.height - 40) {
+    // Adjust spacing to try and keep signature on the same page
+    const pageHeight = doc.internal.pageSize.height;
+    const signatureHeight = 45; 
+    
+    if (finalY + signatureHeight > pageHeight - 10) {
       doc.addPage();
-      finalY = 30;
+      finalY = 20;
+    } else {
+      finalY += 10;
     }
+    const signX = 140;
     if (stampImage) {
       try { doc.addImage(stampImage, 'PNG', signX, finalY, 40, 25); } catch (e) {}
     }
@@ -1071,19 +1249,19 @@ export const QuotationGenerator: React.FC = () => {
       reader.onload = (ev) => {
         try {
           const data = JSON.parse(ev.target?.result as string);
-          if(data.header) setHeader(data.header);
-          if(data.sender) setSender(data.sender);
-          if(data.recipient) setRecipient(data.recipient);
-          if(data.items) setItems(data.items);
+          if(data.header) setHeader({...data.header});
+          if(data.sender) setSender({...data.sender});
+          if(data.recipient) setRecipient({...data.recipient});
+          if(data.items) setItems([...data.items]);
           if(data.taxRate !== undefined) setTaxRate(data.taxRate);
           if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
           if(data.terms) setTerms(data.terms);
-          alert('Quotation data imported successfully!');
         } catch (err) {
-          alert('Failed to parse the quotation file. Please ensure it is a valid JSON file.');
+          console.error('Failed to parse the quotation file.');
         }
       };
       reader.readAsText(e.target.files[0]);
+      e.target.value = ''; // Reset to allow re-importing same file
     }
   };
 
@@ -1187,13 +1365,11 @@ export const QuotationGenerator: React.FC = () => {
         if(data.taxRate !== undefined) setTaxRate(data.taxRate);
         if(data.currencySymbol !== undefined) setCurrencySymbol(data.currencySymbol);
         if(data.terms) setTerms(data.terms);
-        
-        alert('Quotation PDF imported and fields populated successfully!');
       } catch (err) {
         console.error('PDF Import Error:', err);
-        alert('Failed to import PDF. Please make sure it is a valid quotation PDF.');
       } finally {
         setIsImporting(false);
+        e.target.value = ''; // Reset to allow re-importing same file
       }
     }
   };
