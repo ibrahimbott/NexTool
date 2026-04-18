@@ -46,36 +46,100 @@ interface FeeItem {
 // --- Preview Scaler Component ---
 const PreviewScaler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [autoScale, setAutoScale] = useState(1);
+  const [manualZoom, setManualZoom] = useState(0); // -5 to +5 mapping to additional scale
+  const [contentHeight, setContentHeight] = useState(1123); // Default A4 height in pixels
 
   useEffect(() => {
-    const handleResize = () => {
+    const updateScale = () => {
       if (containerRef.current) {
         const parentWidth = containerRef.current.offsetWidth;
         const a4Width = 794; // 210mm @ 96dpi
-        const availableWidth = parentWidth - 32; 
-        const newScale = Math.min(1, availableWidth / a4Width);
-        setScale(newScale);
+        const availableWidth = parentWidth - 64; // More padding for safety
+        const baseScale = Math.min(1, availableWidth / a4Width);
+        setAutoScale(baseScale);
       }
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScale();
+      if (contentRef.current) {
+        setContentHeight(contentRef.current.offsetHeight);
+      }
+    });
+
+    if (containerRef.current) resizeObserver.observe(containerRef.current);
+    if (contentRef.current) resizeObserver.observe(contentRef.current);
+
+    updateScale();
+    return () => resizeObserver.disconnect();
   }, []);
 
+  const effectiveScale = Math.max(0.1, autoScale + (manualZoom * 0.1));
+
   return (
-    <div ref={containerRef} className="w-full flex justify-center overflow-hidden bg-gray-200 dark:bg-slate-950/50 rounded-xl border border-gray-300 dark:border-slate-800 p-4 md:p-8 min-h-[500px]">
+    <div className="space-y-4">
+      {/* Zoom Controls */}
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center gap-2">
+           <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Zoom</span>
+           <div className="flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
+              <button 
+                onClick={() => setManualZoom(prev => Math.max(-5, prev - 1))}
+                className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors"
+              >
+                <Plus className="w-3 h-3 rotate-45" />
+              </button>
+              <span className="px-2 text-xs font-mono min-w-[3.5rem] text-center">
+                {Math.round(effectiveScale * 100)}%
+              </span>
+              <button 
+                onClick={() => setManualZoom(prev => Math.min(10, prev + 1))}
+                className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+           </div>
+        </div>
+        <button 
+          onClick={() => setManualZoom(0)}
+          className="text-xs text-blue-500 hover:text-blue-600 font-medium"
+        >
+          Reset
+        </button>
+      </div>
+
       <div 
-        style={{ 
-          transform: `scale(${scale})`, 
-          transformOrigin: 'top center',
-          width: '210mm', 
-          minHeight: '297mm',
-          height: 'auto'
-        }}
-        className="shadow-2xl transition-transform duration-200 ease-out bg-white origin-top"
+        ref={containerRef} 
+        className="w-full bg-gray-200 dark:bg-slate-950/50 rounded-xl border border-gray-300 dark:border-slate-800 overflow-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-slate-700"
+        style={{ height: 'auto', maxHeight: '80vh', position: 'relative' }}
       >
-        {children}
+        <div 
+          style={{ 
+            height: `${contentHeight * effectiveScale + 64}px`,
+            minHeight: '500px',
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '32px 0'
+          }}
+        >
+          <div 
+            ref={contentRef}
+            style={{ 
+              transform: `scale(${effectiveScale})`, 
+              transformOrigin: 'top center',
+              width: '210mm', 
+              minHeight: '297mm',
+              height: 'fit-content',
+              flexShrink: 0
+            }}
+            className="shadow-2xl bg-white"
+          >
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   );
